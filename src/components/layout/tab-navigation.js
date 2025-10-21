@@ -43,7 +43,7 @@ export function TabsNavigation() {
         <RpcTester/>
         </TabsContent>
 
-        <TabsContent value="rpc">
+        <TabsContent value="snippets">
        Coming soon      
          </TabsContent>
 
