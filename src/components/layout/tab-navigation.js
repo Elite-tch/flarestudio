@@ -1,7 +1,7 @@
 "use client"
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"
-//import FTSODashboard from "./FTSODashboard"
+import FTSOPlayground from "./FTSODashboard"
 import NetworkOverview from "./NetworkOverview"
 import RpcTester from "./RpcTester"
 //import { FTSODashboard } from "./ftso-dashboard"
@@ -36,7 +36,7 @@ export function TabsNavigation() {
         </TabsContent>
 
         <TabsContent value="ftso">
-          Coming Soon
+          <FTSOPlayground/>
         </TabsContent>
 
         <TabsContent value="rpc">

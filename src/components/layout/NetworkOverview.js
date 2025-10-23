@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react"
 import axios from "axios"
 import { RefreshCw, Eye } from "lucide-react"
 import TransactionModal from "./TransactionModal"
+import TutorialSection from "../Block/Tutorial"
 
 export default function NetworkOverview() {
   const [blocks, setBlocks] = useState([])
@@ -34,17 +35,27 @@ export default function NetworkOverview() {
 
   const formatNumber = (num) => (num ? num.toLocaleString() : "-")
 
+  const baseFeeColor = (fee) => {
+    if (!fee) return "text-gray-600"
+    const gwei = Number(fee) / 1e9
+    if (gwei < 20) return "text-green-600"
+    if (gwei < 50) return "text-yellow-600"
+    return "text-red-600"
+  }
+
   return (
-    <div className=" bg-[#fff1f3] rounded  py-10 px-6">
+    <div className="bg-[#fff1f3] rounded py-10 px-4 md:px-6">
       {/* Header */}
       <div className="max-w-6xl mx-auto flex flex-col gap-2 sm:flex-row justify-between md:items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 mb-1">Latest Blocks</h1>
-          <p className="text-gray-500 text-sm md:text-base">Get a quick view of what’s happening on the Flare network right now.</p>
+          <p className="text-gray-500 text-sm md:text-base">
+            Get a quick view of what’s happening on the Flare network right now.
+          </p>
         </div>
         <button
           onClick={fetchBlocks}
-          className={`flex items-center justify-end gap-2 w-fit text-sm font-medium text-[#e93b6c]  border border-[#e93b6c] px-3 py-1.5 rounded-lg transition ${
+          className={`flex items-center justify-end gap-2 w-fit text-sm font-medium text-[#e93b6c] border border-[#e93b6c] px-3 py-1.5 rounded-lg transition ${
             refreshing && "opacity-70 cursor-wait"
           }`}
           disabled={refreshing}
@@ -73,7 +84,7 @@ export default function NetworkOverview() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-8 text-gray-500 italic">
+                  <td colSpan="8" className="text-center py-8 text-gray-500 italic">
                     Loading latest blocks...
                   </td>
                 </tr>
@@ -106,7 +117,7 @@ export default function NetworkOverview() {
                         ? (Number(block.burnt_fees) / 1e18).toFixed(8)
                         : "0.00000000"}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className={`py-3 px-4 ${baseFeeColor(block.base_fee)}`}>
                       {block.base_fee
                         ? `${(Number(block.base_fee) / 1e9).toFixed(4)} Gwei`
                         : "25.0000 Gwei"}
@@ -131,17 +142,23 @@ export default function NetworkOverview() {
         <div className="p-4 text-center border-t bg-[#ffe4e8]">
           <button
             onClick={() => window.open("https://flare-explorer.flare.network/blocks", "_blank")}
-            className="text-[#e93b6c] font-medium  transition"
+            className="text-[#e93b6c] font-medium transition"
           >
             View All Blocks →
           </button>
         </div>
+
+       
       </div>
 
       {/* Modal for Transactions */}
       {selectedBlock && (
         <TransactionModal block={selectedBlock} onClose={() => setSelectedBlock(null)} />
       )}
+
+      <div>
+      <TutorialSection blocks={blocks} />
+      </div>
     </div>
   )
 }

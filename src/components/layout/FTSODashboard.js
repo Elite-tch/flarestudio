@@ -1,162 +1,137 @@
-// components/ftso-dashboard/FtsoDashboard.jsx
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import PriceChart from './ftso/PriceChart';
-import PriceCardsGrid from './ftso/PriceCardsGrid';
-import ProviderList from './ftso/ProviderList';
-import FtsoStats from './ftso/FtsoStats';
+import { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import { loadFtsoContracts } from "@/lib/ftsoContracts";
+import { toast } from "react-hot-toast";
 
-export default function FtsoDashboard() {
-  const [ftsoData, setFtsoData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedToken, setSelectedToken] = useState('FLR');
+const FTSO_SYMBOLS = ['BTC', 'ETH', 'XRP', 'ADA', 'ALGO', 'DOGE', 'FIL', 'LTC', 'XLM'];
 
-  const fetchFtsoData = async () => {
+export default function FTSODashboard() {
+  const [signer, setSigner] = useState(null);
+  const [address, setAddress] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [ftsoPrices, setFtsoPrices] = useState({});
+
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      toast.error("Install MetaMask first.");
+      return;
+    }
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const s = await provider.getSigner();
+    const addr = await s.getAddress();
+    setSigner(s);
+    setAddress(addr);
+    toast.success("Wallet connected.");
+  };
+
+  const fetchAllFTSOPrices = async () => {
+    if (!signer) {
+      toast.error("Connect wallet first.");
+      return;
+    }
+
+    setLoading(true);
+    const prices = {};
+
     try {
-      setLoading(true);
-      setError(null);
+      const contracts = await loadFtsoContracts(signer);
       
-      // Fetch current price data from Flare FTSO API
-      const priceResponse = await fetch('https://flare-api.flare.network/ext/ftso');
-      if (!priceResponse.ok) throw new Error('Failed to fetch FTSO data');
+      for (const symbol of FTSO_SYMBOLS) {
+        try {
+          const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
+          if (ftsoAddress && ftsoAddress !== ethers.ZeroAddress) {
+            const ftsoAbi = ["function getCurrentPrice() view returns (uint256 price, uint256 timestamp)"];
+            const ftso = new ethers.Contract(ftsoAddress, ftsoAbi, signer);
+            const [price] = await ftso.getCurrentPrice();
+            prices[symbol] = Number(price) / 1e5;
+          }
+        } catch (err) {
+          console.warn(`Could not fetch ${symbol}:`, err);
+          prices[symbol] = null;
+        }
+      }
       
-      const priceData = await priceResponse.json();
-      
-      // Fetch provider data
-      const providerResponse = await fetch('https://flare-api.flare.network/ext/ftso/providers');
-      const providerData = providerResponse.ok ? await providerResponse.json() : { providers: [] };
-      
-      // Fetch historical data for charts
-      const historicalResponse = await fetch(`https://flare-api.flare.network/ext/ftso/history?symbol=${selectedToken}&hours=24`);
-      const historicalData = historicalResponse.ok ? await historicalResponse.json() : { history: [] };
-
-      const transformedData = {
-        prices: priceData.prices || [],
-        providers: providerData.providers || [],
-        history: historicalData.history || [],
-        lastUpdate: new Date().toISOString()
-      };
-
-      setFtsoData(transformedData);
-    } catch (err) {
-      setError(err.message || 'Failed to fetch FTSO data');
-      console.error('FTSO Data fetch error:', err);
+      setFtsoPrices(prices);
+      toast.success("FTSO prices updated!");
+    } catch (error) {
+      console.error("Error fetching FTSO prices:", error);
+      toast.error("Failed to fetch prices");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchFtsoData();
-    const interval = setInterval(fetchFtsoData, 30000);
-    return () => clearInterval(interval);
-  }, [selectedToken]);
-
-  if (loading && !ftsoData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-4">
-                <div className="h-64 bg-gray-200 rounded"></div>
-                <div className="h-32 bg-gray-200 rounded"></div>
-              </div>
-              <div className="space-y-4">
-                <div className="h-32 bg-gray-200 rounded"></div>
-                <div className="h-64 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <div className="text-red-400 mr-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-red-800 font-medium">Error loading FTSO data</h3>
-                <p className="text-red-600 text-sm mt-1">{error}</p>
-                <button 
-                  onClick={fetchFtsoData}
-                  className="mt-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded text-sm font-medium transition-colors"
-                >
-                  Retry
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">FTSO Dashboard</h1>
-            <p className="text-gray-600 mt-2">Real-time Flare Time Series Oracle data</p>
-          </div>
-          <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-            {ftsoData?.lastUpdate && (
-              <span className="text-sm text-gray-500">
-                Last update: {new Date(ftsoData.lastUpdate).toLocaleTimeString()}
-              </span>
-            )}
-            <button
-              onClick={fetchFtsoData}
-              disabled={loading}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Refreshing...' : 'Refresh Data'}
-            </button>
+    <div style={{ maxWidth: 800, margin: "20px auto", padding: 20 }}>
+      <h1>Flare FTSO Oracle Dashboard</h1>
+      
+      {/* Wallet Connection */}
+      <div style={{ padding: 16, background: "#f5f5f5", borderRadius: 8, marginBottom: 20 }}>
+        <div><strong>Wallet:</strong> {address ? `✅ ${address.slice(0,6)}...${address.slice(-4)}` : "❌ Not connected"}</div>
+        <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+          <button onClick={connectWallet} style={btnStyle}>
+            Connect Wallet
+          </button>
+          <button onClick={fetchAllFTSOPrices} style={btnStyle} disabled={loading || !signer}>
+            {loading ? "Fetching..." : "Refresh FTSO Prices"}
+          </button>
+        </div>
+      </div>
+
+      {/* FTSO Prices Display */}
+      <div style={{ background: "white", borderRadius: 8, border: "1px solid #e0e0e0" }}>
+        <div style={{ padding: 16, borderBottom: "1px solid #e0e0e0", background: "#f8f9fa" }}>
+          <h3 style={{ margin: 0 }}>Live FTSO Oracle Prices</h3>
+          <div style={{ fontSize: "0.9em", color: "#666", marginTop: 4 }}>
+            Real-time prices from Flare&apos;s decentralized oracle system
           </div>
         </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Prices and Chart */}
-          <div className="lg:col-span-2 space-y-6">
-            <PriceCardsGrid 
-              prices={ftsoData?.prices || []} 
-              selectedToken={selectedToken}
-              onTokenSelect={setSelectedToken}
-            />
-            
-            <PriceChart 
-              history={ftsoData?.history || []}
-              selectedToken={selectedToken}
-              prices={ftsoData?.prices || []}
-            />
-            
-            <FtsoStats 
-              prices={ftsoData?.prices || []}
-              providers={ftsoData?.providers || []}
-            />
-          </div>
-
-          {/* Right Column - Providers */}
-          <div className="space-y-6">
-            <ProviderList providers={ftsoData?.providers || []} />
-          </div>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0 }}>
+          {FTSO_SYMBOLS.map(symbol => (
+            <div key={symbol} style={{ 
+              padding: 16, 
+              borderBottom: "1px solid #f0f0f0",
+              borderRight: "1px solid #f0f0f0",
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: "1.2em", fontWeight: "bold", marginBottom: 8 }}>
+                {symbol}
+              </div>
+              <div style={{ fontSize: "1.1em", color: "#2c5aa0" }}>
+                {ftsoPrices[symbol] ? `$${ftsoPrices[symbol].toLocaleString()}` : "—"}
+              </div>
+              <div style={{ fontSize: "0.8em", color: "#666", marginTop: 4 }}>
+                FTSO Consensus Price
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* Educational Info */}
+      <div style={{ marginTop: 20, padding: 16, background: "#e8f4fd", borderRadius: 8 }}>
+        <h4>About Flare FTSO</h4>
+        <p>The Flare Time Series Oracle provides decentralized price data using:</p>
+        <ul>
+          <li><strong>Weighted Median</strong>: Resistant to manipulation</li>
+          <li><strong>Multiple Providers</strong>: Decentralized data sources</li>
+          <li><strong>Commit-Reveal</strong>: Prevents gaming the system</li>
+          <li><strong>Provider Rewards</strong>: Incentives for accurate data</li>
+        </ul>
       </div>
     </div>
   );
 }
+
+const btnStyle = {
+  background: "#007bff",
+  color: "white",
+  padding: "10px 16px",
+  borderRadius: 6,
+  border: "none",
+  cursor: "pointer",
+};

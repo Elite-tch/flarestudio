@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import LiveSandboxModal from "../Block/LiveSandboxModal"
 import toast from "react-hot-toast"
 
 import {
@@ -223,8 +224,9 @@ function AdvancedMode({ onSend, loading }) {
 }
 
 // Response Viewer
-function ResponseViewer({ response, loading, error }) {
+function ResponseViewer({ response, loading, error, onTryLive }) {
   const [showReadable, setShowReadable] = useState(false)
+
   const toReadable = obj => {
     try {
       return JSON.stringify(obj, (key, val) => {
@@ -236,23 +238,63 @@ function ResponseViewer({ response, loading, error }) {
       }, 2)
     } catch { return JSON.stringify(obj, null, 2) }
   }
+
   const displayData = showReadable ? toReadable(response) : JSON.stringify(response, null, 2)
 
   return (
     <div className="p-4 mt-4 bg-[#ffe4e8] rounded shadow-sm">
       <div className="flex items-center justify-between">
         <div className="font-medium">Response</div>
-        {response && <Button variant="outline" size="sm" onClick={() => setShowReadable(!showReadable)}>{showReadable ? "View Raw" : "View Readable"}</Button>}
+        {response && (
+          <Button variant="outline" size="sm" onClick={() => setShowReadable(!showReadable)}>
+            {showReadable ? "View Raw" : "View Readable"}
+          </Button>
+        )}
+
+{response && showReadable && onTryLive && (
+          <Button
+            className="mt-2 bg-[#e93b6c] hover:bg-[#e93b6c] text-white"
+            onClick={onTryLive}
+          >
+            Try Live
+          </Button>
+        )}
       </div>
+
       <div className="mt-3">
-        {loading && <div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin mr-2" /><span className="text-sm text-gray-500">Loading...</span></div>}
-        {error && <div className="bg-red-50 border border-red-200 rounded p-3"><div className="text-sm font-medium text-red-800 mb-1">Error:</div><pre className="text-sm text-red-700 whitespace-pre-wrap">{String(error)}</pre></div>}
-        {response && <pre className="bg-gray-50 border rounded p-3 text-sm overflow-auto max-h-96">{displayData}</pre>}
-        {!response && !error && !loading && <div className="text-sm text-gray-700 p-4 text-center border-2 border-[#e93b6c]/40 border-dashed rounded">No response yet. Send a request above.</div>}
+        {loading && (
+          <div className="flex items-center justify-center p-4">
+            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+            <span className="text-sm text-gray-500">Loading...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded p-3">
+            <div className="text-sm font-medium text-red-800 mb-1">Error:</div>
+            <pre className="text-sm text-red-700 whitespace-pre-wrap">{String(error)}</pre>
+          </div>
+        )}
+
+        {response && (
+          <pre className="bg-gray-50 border rounded p-3 text-sm overflow-auto max-h-96">
+            {displayData}
+          </pre>
+        )}
+
+        {!response && !error && !loading && (
+          <div className="text-sm text-gray-700 p-4 text-center border-2 border-[#e93b6c]/40 border-dashed rounded">
+            No response yet. Send a request above.
+          </div>
+        )}
+
+        {/* Try Live Button */}
+       
       </div>
     </div>
   )
 }
+
 
 // Main RpcTester Component
 export default function RpcTester() {
@@ -262,6 +304,8 @@ export default function RpcTester() {
   const [loading, setLoading] = useState(false)
   const [lastPayload, setLastPayload] = useState(null)
   const [mode, setMode] = useState("quick") // quick or advanced
+  const [sandboxOpen, setSandboxOpen] = useState(false)
+
 
   const handleSend = async ({ method, params }) => {
     if (!rpcUrl) { alert("Please set an RPC URL first"); return }
@@ -318,6 +362,8 @@ export default function RpcTester() {
   >
     Advanced Mode
   </Button>
+
+  
 </div>
 
 
@@ -363,13 +409,21 @@ export default function RpcTester() {
                 </div>
               </div>
             </div>
-            <ResponseViewer response={response} loading={loading} error={error} />
+            <ResponseViewer response={response} loading={loading} error={error}  onTryLive={() => setSandboxOpen(true)} />
           </div>
         </div>
 
         <div className="mt-6 text-sm text-gray-600">
           Tip: use Quick Mode to run common methods, or Advanced Mode to paste custom method and params.
         </div>
+
+        <LiveSandboxModal
+  isOpen={sandboxOpen}
+  onClose={() => setSandboxOpen(false)}
+  examplePayload={lastPayload}
+  rpcUrl={rpcUrl}
+/>
+
       </div>
     </div>
   )
