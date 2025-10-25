@@ -245,20 +245,22 @@ function ResponseViewer({ response, loading, error, onTryLive }) {
     <div className="p-4 mt-4 bg-[#ffe4e8] rounded shadow-sm">
       <div className="flex items-center justify-between">
         <div className="font-medium">Response</div>
+        <div className="flex items-center gap-3">
         {response && (
-          <Button variant="outline" size="sm" onClick={() => setShowReadable(!showReadable)}>
+          <Button className='py-2' variant="outline"  onClick={() => setShowReadable(!showReadable)}>
             {showReadable ? "View Raw" : "View Readable"}
           </Button>
         )}
 
-{response && showReadable && onTryLive && (
+{response &&  onTryLive && (
           <Button
-            className="mt-2 bg-[#e93b6c] hover:bg-[#e93b6c] text-white"
+            className=" bg-[#e93b6c] hover:bg-[#e93b6c] text-white"
             onClick={onTryLive}
           >
             Try Live
           </Button>
         )}
+        </div>
       </div>
 
       <div className="mt-3">
