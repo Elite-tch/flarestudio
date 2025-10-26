@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 import { loadFtsoContracts } from "@/lib/ftsoContracts";
 import { RefreshCw, Eye } from "lucide-react"
@@ -85,10 +85,10 @@ export default function FTSODashboard() {
   const activeChain = useActiveWalletChain();
 
   const getProvider = () => (typeof window !== 'undefined' && window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
-  const getSigner = async () => { 
+  const getSigner = useCallback(async () => { 
     const provider = getProvider(); 
     return provider && account ? await provider.getSigner() : null; 
-  };
+  }, [account]);
 
   // Update price history with real data and generate realistic charts
   const updatePriceHistory = (symbol, newPrice) => {
@@ -103,7 +103,7 @@ export default function FTSODashboard() {
     });
   };
 
-  const fetchAllFTSOPrices = async () => {
+  const fetchAllFTSOPrices = useCallback(async () => {
     if (!account) {
       toast.error("Connect wallet first.");
       return;
@@ -188,7 +188,7 @@ export default function FTSODashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [account, activeChain, errors, getSigner, priceHistory]);
 
   const fetchProviderDetails = async (symbol) => {
     if (!account) return;
@@ -289,7 +289,7 @@ ${results.join('\n')}
       const interval = setInterval(fetchAllFTSOPrices, 60000);
       return () => clearInterval(interval);
     }
-  }, [account, autoRefresh]);
+  }, [account, autoRefresh, fetchAllFTSOPrices]);
 
   // Load cached real data with proper date handling
   useEffect(() => {
@@ -397,7 +397,7 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto md:p-6 space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold">Flare FTSO Oracle Dashboard</h1>
         <p className="text-gray-600 mt-2">Real decentralized price data from Flare Time Series Oracle</p>
@@ -406,12 +406,13 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
      
       {/* Tabs */}
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="flex gap-8">
-          <TabsTrigger className='px-8' value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger className='px-8' value="playground"> Code Playground</TabsTrigger>
-          <TabsTrigger className='px-8' value="insights">Network Insights</TabsTrigger>
+      <div className=" overflow-x-auto">  
+        <TabsList className="inline-flex w-full min-w-max md:w-full gap-6 bg-transparent md:max-w-2xl md:mx-auto md:grid md:grid-cols-4">
+          <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="playground"> Code Playground</TabsTrigger>
+          <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="insights">Network Insights</TabsTrigger>
         </TabsList>
-
+        </div>
         {/* Dashboard Tab */}
         <TabsContent value="dashboard">
            {/* Wallet Info */}
@@ -581,7 +582,7 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
               </div>
               
               <div className="flex gap-3">
-                <Button className='bg-[#e93b6c]' onClick={runExampleCode} disabled={!account}>
+                <Button className='bg-[#e93b6c] hover:bg-[#e93b6c] ' onClick={runExampleCode} disabled={!account}>
                   Run Code
                 </Button>
                 <Button variant="outline" onClick={() => navigator.clipboard.writeText(exampleCode)}>
@@ -675,7 +676,7 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
 
       {/* Provider Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl overflow-hidden">
           <DialogHeader>
             <DialogTitle> FTSO Contract Data for {selectedToken}</DialogTitle>
             <DialogClose />
