@@ -1,24 +1,30 @@
-import { Contract, keccak256 } from "ethers";
+import { Contract, keccak256, JsonRpcProvider } from "ethers";
 import { nameToAbi, nameToAddress } from "@flarenetwork/flare-periphery-contract-artifacts";
 
 export const NETWORK = {
-  name: "coston", // change to "coston2" if you want that network
+  name: "coston",
   rpc: "https://coston-api.flare.network/ext/C/rpc",
-  chainId: 16 // Coston chain id, verify if using a different network
+  chainId: 16
 };
 
-// Load contracts given a provider or signer
+// Create a read-only provider (no wallet needed)
+export function getReadOnlyProvider() {
+  return new JsonRpcProvider(NETWORK.rpc);
+}
+
+// Load contracts with either a signer OR read-only provider
 export async function loadFtsoContracts(providerOrSigner) {
   const network = NETWORK.name;
+  const provider = providerOrSigner?.provider || providerOrSigner;
 
   const priceSubmitterAbi = nameToAbi("PriceSubmitter", network);
-  const priceSubmitterAddr = await nameToAddress("PriceSubmitter", network, providerOrSigner.provider || providerOrSigner);
+  const priceSubmitterAddr = await nameToAddress("PriceSubmitter", network, provider);
 
   const ftsoRegistryAbi = nameToAbi("FtsoRegistry", network);
-  const ftsoRegistryAddr = await nameToAddress("FtsoRegistry", network, providerOrSigner.provider || providerOrSigner);
+  const ftsoRegistryAddr = await nameToAddress("FtsoRegistry", network, provider);
 
   const ftsoManagerAbi = nameToAbi("FtsoManager", network);
-  const ftsoManagerAddr = await nameToAddress("FtsoManager", network, providerOrSigner.provider || providerOrSigner);
+  const ftsoManagerAddr = await nameToAddress("FtsoManager", network, provider);
 
   return {
     priceSubmitter: new Contract(priceSubmitterAddr, priceSubmitterAbi, providerOrSigner),
@@ -27,16 +33,15 @@ export async function loadFtsoContracts(providerOrSigner) {
   };
 }
 
-// Helper to scale price to integer. Adjust decimals to the protocol expectation.
+// Helper to scale price to integer
 export function scalePriceToInt(rawPrice, decimals = 5) {
   const factor = Math.pow(10, decimals);
   const scaled = Math.floor(Number(rawPrice) * factor);
   return scaled;
 }
 
-// Helper to build commit hash (replaces ethers.utils.solidityKeccak256)
+// Helper to build commit hash
 export async function makeCommitHash(epochId, scaledPrice, randomHex) {
-  // ethers v6 no longer has `utils.solidityKeccak256`, use keccak256 with ABI encoding
-  const { solidityPacked } = await import("ethers"); // dynamic import for ESM
+  const { solidityPacked } = await import("ethers");
   return keccak256(solidityPacked(["uint256", "uint256", "bytes32"], [epochId, scaledPrice, randomHex]));
 }
