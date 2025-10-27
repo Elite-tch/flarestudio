@@ -90,11 +90,11 @@ export function WalletConnection() {
   client={client}
   appMetadata={{
     name: "FlareStudio",
-    url: "https://flarestudio.xyz",
+   
   }}
   chains={[flare, flareTestnet]}
   walletConnect={{
-    projectId: "1a65a3b25b7dcd449a258609cde4b742",
+    projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-client-id",
     
   }}
   theme={lightTheme({
