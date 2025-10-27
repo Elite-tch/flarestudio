@@ -1,4 +1,4 @@
-import { Contract, keccak256, toUtf8Bytes } from "ethers";
+import { Contract, keccak256 } from "ethers";
 import { nameToAbi, nameToAddress } from "@flarenetwork/flare-periphery-contract-artifacts";
 
 export const NETWORK = {

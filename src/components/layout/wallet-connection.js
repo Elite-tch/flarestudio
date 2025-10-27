@@ -90,7 +90,9 @@ export function WalletConnection() {
   client={client}
   appMetadata={{
     name: "FlareStudio",
-   
+    description: "Interactive Flare Blockchain Playground",
+    url: typeof window !== 'undefined' ? window.location.origin : "https://flarestudios.com",
+    iconUrl: typeof window !== 'undefined' ? `${window.location.origin}/flarelogo.png` : "https://flarestudios.com/flarelogo.png",
   }}
   chains={[flare, flareTestnet]}
   walletConnect={{
@@ -99,6 +101,23 @@ export function WalletConnection() {
       native: "metamask://",
       universal: "https://metamask.app.link",
     },
+    metadata: {
+      name: "FlareStudio",
+      description: "Interactive Flare Blockchain Playground",
+      url: typeof window !== 'undefined' ? window.location.origin : "https://flarestudios.com",
+      icons: [typeof window !== 'undefined' ? `${window.location.origin}/flarelogo.png` : "https://flarestudios.com/flarelogo.png"],
+    },
+    qrModalOptions: {
+      themeMode: "light",
+      themeVariables: {
+        "--wcm-z-index": "1000",
+      },
+    },
+  }}
+  connectModal={{
+    size: "compact",
+    title: "Connect to FlareStudio",
+    showThirdwebBranding: false,
   }}
   theme={lightTheme({
     colors: {
