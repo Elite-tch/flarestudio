@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { loadFtsoContracts } from "@/lib/ftsoContracts";
 import { RefreshCw, Eye } from "lucide-react"
@@ -85,10 +85,10 @@ export default function FTSODashboard() {
   const activeChain = useActiveWalletChain();
 
   const getProvider = () => (typeof window !== 'undefined' && window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
-  const getSigner = useCallback(async () => { 
+  const getSigner = async () => { 
     const provider = getProvider(); 
     return provider && account ? await provider.getSigner() : null; 
-  }, [account]);
+  };
 
   // Update price history with real data and generate realistic charts
   const updatePriceHistory = (symbol, newPrice) => {
@@ -103,7 +103,7 @@ export default function FTSODashboard() {
     });
   };
 
-  const fetchAllFTSOPrices = useCallback(async () => {
+  const fetchAllFTSOPrices = async () => {
     if (!account) {
       toast.error("Connect wallet first.");
       return;
@@ -188,7 +188,7 @@ export default function FTSODashboard() {
     } finally {
       setLoading(false);
     }
-  }, [account, activeChain, errors, getSigner, priceHistory]);
+  };
 
   const fetchProviderDetails = async (symbol) => {
     if (!account) return;
@@ -289,7 +289,7 @@ ${results.join('\n')}
       const interval = setInterval(fetchAllFTSOPrices, 60000);
       return () => clearInterval(interval);
     }
-  }, [account, autoRefresh, fetchAllFTSOPrices]);
+  }, [account, autoRefresh]);
 
   // Load cached real data with proper date handling
   useEffect(() => {
