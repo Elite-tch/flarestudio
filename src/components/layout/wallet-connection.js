@@ -94,7 +94,8 @@ export function WalletConnection() {
   }}
   chains={[flare, flareTestnet]}
   walletConnect={{
-    projectId: "de9c16eb64e4e99e9edfd3c57e50c440",
+    projectId: "1a65a3b25b7dcd449a258609cde4b742",
+    
   }}
   theme={lightTheme({
     colors: {
