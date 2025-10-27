@@ -86,26 +86,32 @@ export function WalletConnection() {
         </DropdownMenu>
       )}
 
-<ConnectButton
-  client={client}
-  appMetadata={{
-    name: "FlareStudio",
-   
-  }}
-  chains={[flare, flareTestnet]}
-  walletConnect={{
-    projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-client-id",
-    
-  }}
-  theme={lightTheme({
-    colors: {
-      primaryButtonBg: "#e93b6c",
-      primaryButtonText: "#ffffff",
-      connectedButtonBg: "#fff1f3",
-    },
-  })}
-/>
-
+      <ConnectButton
+        client={client}
+        appMetadata={{
+          name: "FlareStudio",
+          url: "https://flarestudio.xyz",
+        }}
+        chains={[flare, flareTestnet]}
+        wallets={[
+          "metamask", 
+          "walletConnect"
+        ]}
+        walletConnect={{
+          projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-client-id",
+          redirect: {
+            native: "metamask://",
+            universal: "https://metamask.app.link",
+          },
+        }}
+        theme={lightTheme({
+          colors: {
+            primaryButtonBg: "#e93b6c",
+            primaryButtonText: "#ffffff",
+            connectedButtonBg: "#fff1f3",
+          },
+        })}
+      />
     </div>
   );
 }
