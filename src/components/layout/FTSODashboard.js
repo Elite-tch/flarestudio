@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { loadFtsoContracts } from "@/lib/ftsoContracts";
-import { RefreshCw, Eye } from "lucide-react"
+import { RefreshCw, Eye } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -51,7 +50,7 @@ const formatTimeSafe = (dateValue) => {
 const generatePriceMovement = (basePrice, volatility = 0.02) => {
   const movements = [];
   let currentPrice = basePrice;
-  
+
   for (let i = 0; i < 24; i++) {
     // Simulate realistic price movement with some randomness
     const change = (Math.random() - 0.5) * volatility * currentPrice;
@@ -62,7 +61,7 @@ const generatePriceMovement = (basePrice, volatility = 0.02) => {
       value: Number(currentPrice.toFixed(4))
     });
   }
-  
+
   return movements;
 };
 
@@ -79,23 +78,86 @@ export default function FTSODashboard() {
   const [codeOutput, setCodeOutput] = useState("// Run the code to see FTSO price data here\n");
   const [errors, setErrors] = useState({});
   const [selectedTokens, setSelectedTokens] = useState(['BTC', 'ETH', 'XRP', 'ADA']);
-  const [refreshing, setRefreshing] = useState(false)
+  const [refreshing, setRefreshing] = useState(false);
 
-  const account = useActiveAccount();
-  const activeChain = useActiveWalletChain();
+  // Custom wallet state, using ethers.js directly
+  const [walletAddress, setWalletAddress] = useState(null);
+  const [networkName, setNetworkName] = useState("");
+  const [provider, setProvider] = useState(null);
+  const [signer, setSigner] = useState(null);
 
-  const getProvider = () => (typeof window !== 'undefined' && window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
-  const getSigner = async () => { 
-    const provider = getProvider(); 
-    return provider && account ? await provider.getSigner() : null; 
+  // Connect wallet using ethers.js and MetaMask
+  const connectWallet = async () => {
+    try {
+      if (!window.ethereum) {
+        toast.error("Please install MetaMask or a compatible wallet");
+        return;
+      }
+
+      const browserProvider = new ethers.BrowserProvider(window.ethereum);
+      // Request accounts
+      const accounts = await browserProvider.send("eth_requestAccounts", []);
+      const signerInstance = await browserProvider.getSigner();
+      const network = await browserProvider.getNetwork();
+
+      setProvider(browserProvider);
+      setSigner(signerInstance);
+      setWalletAddress(accounts[0]);
+      setNetworkName(network?.name || `${network?.chainId}`);
+
+      toast.success("Wallet connected successfully.");
+    } catch (error) {
+      console.error("connectWallet error:", error);
+      toast.error("Failed to connect wallet.");
+    }
   };
+
+  // Optional: handle account and network changes, update state
+  useEffect(() => {
+    if (!window.ethereum) return;
+
+    const handleAccountsChanged = (accounts) => {
+      if (!accounts || accounts.length === 0) {
+        setWalletAddress(null);
+        setSigner(null);
+        setProvider(null);
+        setNetworkName("");
+        toast("Wallet disconnected.");
+      } else {
+        setWalletAddress(accounts[0]);
+        // we do not set signer here, user can click connect again if needed
+      }
+    };
+
+    const handleChainChanged = async () => {
+      try {
+        if (window.ethereum && provider) {
+          const net = await provider.getNetwork();
+          setNetworkName(net?.name || `${net?.chainId}`);
+        } else if (window.ethereum) {
+          const tmpProvider = new ethers.BrowserProvider(window.ethereum);
+          const net = await tmpProvider.getNetwork();
+          setNetworkName(net?.name || `${net?.chainId}`);
+        }
+      } catch (err) {
+        console.error("chain changed error:", err);
+      }
+    };
+
+    window.ethereum.on?.("accountsChanged", handleAccountsChanged);
+    window.ethereum.on?.("chainChanged", handleChainChanged);
+
+    return () => {
+      window.ethereum.removeListener?.("accountsChanged", handleAccountsChanged);
+      window.ethereum.removeListener?.("chainChanged", handleChainChanged);
+    };
+  }, [provider]);
 
   // Update price history with real data and generate realistic charts
   const updatePriceHistory = (symbol, newPrice) => {
     setPriceHistory(prev => {
-      // Generate realistic 24-hour price movement data
       const realisticData = generatePriceMovement(newPrice);
-      
+
       return {
         ...prev,
         [symbol]: realisticData
@@ -104,7 +166,7 @@ export default function FTSODashboard() {
   };
 
   const fetchAllFTSOPrices = async () => {
-    if (!account) {
+    if (!signer) {
       toast.error("Connect wallet first.");
       return;
     }
@@ -113,15 +175,9 @@ export default function FTSODashboard() {
     const newPrices = {};
     const newTimestamps = {};
     const newErrors = {};
-    setRefreshing(true)
+    setRefreshing(true);
 
     try {
-      const signer = await getSigner();
-      if (!signer) {
-        toast.error("Unable to get signer");
-        return;
-      }
-
       const contracts = await loadFtsoContracts(signer);
 
       // Fetch network stats from FTSO manager
@@ -134,7 +190,7 @@ export default function FTSODashboard() {
           epochEnd: Number(epochData._endTimestamp),
           activeFTSOs: FTSO_SYMBOLS.length,
           totalProviders: Math.floor(Math.random() * 50) + 30, // Simulated provider count
-          network: activeChain?.name || 'Flare Network'
+          network: networkName || 'Flare Network'
         });
       } catch (error) {
         console.log("Could not fetch epoch data:", error);
@@ -148,14 +204,14 @@ export default function FTSODashboard() {
             const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, signer);
             const [price, timestamp] = await ftso.getCurrentPrice();
             const priceValue = Number(price) / 1e5; // Assuming 5 decimals
-            
+
             newPrices[symbol] = priceValue;
             // Store as ISO string for proper serialization
             newTimestamps[symbol] = new Date(Number(timestamp) * 1000).toISOString();
-            
+
             // Update price history with realistic data
             updatePriceHistory(symbol, priceValue);
-            
+
             // Clear any previous errors for this symbol
             if (errors[symbol]) {
               delete newErrors[symbol];
@@ -176,39 +232,39 @@ export default function FTSODashboard() {
       setFtsoPrices(newPrices);
       setTimestamps(newTimestamps);
       setErrors(newErrors);
-      
+
       localStorage.setItem("ftsoPrices", JSON.stringify(newPrices));
       localStorage.setItem("ftsoTimestamps", JSON.stringify(newTimestamps));
       localStorage.setItem("ftsoPriceHistory", JSON.stringify(priceHistory));
-      
+
       toast.success("FTSO prices updated!");
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch prices");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   const fetchProviderDetails = async (symbol) => {
-    if (!account) return;
-    
+    if (!signer) return;
+
     try {
-      const signer = await getSigner();
       const contracts = await loadFtsoContracts(signer);
       const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
-      
+
       if (ftsoAddress && ftsoAddress !== ethers.ZeroAddress) {
         const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, signer);
-        
+
         // Fetch real data from the contract
         const [currentPrice, currentTimestamp] = await ftso.getCurrentPrice();
         const random = await ftso.getCurrentRandom();
-        
+
         // Use only real contract data
         setSelectedProviders([
-          { 
-            provider: "FTSO Contract", 
+          {
+            provider: "FTSO Contract",
             address: ftsoAddress,
             currentPrice: Number(currentPrice) / 1e5,
             timestamp: new Date(Number(currentTimestamp) * 1000),
@@ -220,10 +276,10 @@ export default function FTSODashboard() {
     } catch (error) {
       console.error("Error fetching provider details:", error);
       setSelectedProviders([
-        { 
-          provider: "Error", 
+        {
+          provider: "Error",
           error: "Could not fetch provider data",
-          message: error.message 
+          message: error.message
         }
       ]);
     }
@@ -236,33 +292,31 @@ export default function FTSODashboard() {
   };
 
   const runExampleCode = async () => {
-    if (!account) {
+    if (!signer) {
       setCodeOutput(" Error: Please connect your wallet first");
       return;
     }
 
     setCodeOutput(" Fetching FTSO price data for multiple tokens...");
-    
+
     try {
-      const signer = await getSigner();
       const contracts = await loadFtsoContracts(signer);
-      
       const results = [];
-      
+
       // Fetch prices for selected tokens
       for (const symbol of selectedTokens) {
         try {
           const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
-          
+
           if (ftsoAddress === ethers.ZeroAddress) {
             results.push(` ${symbol}: No FTSO contract found`);
             continue;
           }
-          
+
           const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, signer);
           const [price, timestamp] = await ftso.getCurrentPrice();
           const priceUSD = Number(price) / 1e5;
-          
+
           results.push(` ${symbol}/USD: $${priceUSD.toFixed(4)} (${new Date(Number(timestamp) * 1000).toLocaleTimeString()})`);
         } catch (error) {
           results.push(` ${symbol}: ${error.message}`);
@@ -273,7 +327,7 @@ export default function FTSODashboard() {
 
 ${results.join('\n')}
 
- Network: ${activeChain?.name || 'Unknown Network'}
+ Network: ${networkName || 'Unknown Network'}
  All prices are real on-chain data from Flare FTSO contracts`;
 
       setCodeOutput(output);
@@ -284,23 +338,24 @@ ${results.join('\n')}
 
   // Auto-refresh with real data
   useEffect(() => {
-    if (autoRefresh && account) {
+    if (autoRefresh && signer) {
       fetchAllFTSOPrices();
       const interval = setInterval(fetchAllFTSOPrices, 60000);
       return () => clearInterval(interval);
     }
-  }, [account, autoRefresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signer, autoRefresh]);
 
   // Load cached real data with proper date handling
   useEffect(() => {
     const cachedPrices = localStorage.getItem('ftsoPrices');
     const cachedTimestamps = localStorage.getItem('ftsoTimestamps');
     const cachedHistory = localStorage.getItem('ftsoPriceHistory');
-    
+
     if (cachedPrices) {
       setFtsoPrices(JSON.parse(cachedPrices));
     }
-    
+
     if (cachedTimestamps) {
       const parsedTimestamps = JSON.parse(cachedTimestamps);
       const formattedTimestamps = {};
@@ -311,7 +366,7 @@ ${results.join('\n')}
       });
       setTimestamps(formattedTimestamps);
     }
-    
+
     if (cachedHistory) {
       setPriceHistory(JSON.parse(cachedHistory));
     }
@@ -403,49 +458,70 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
         <p className="text-gray-600 mt-2">Real decentralized price data from Flare Time Series Oracle</p>
       </div>
 
-     
       {/* Tabs */}
       <Tabs defaultValue="dashboard" className="space-y-6">
-      <div className=" overflow-x-auto">  
-        <TabsList className="inline-flex w-full min-w-max md:w-full gap-6 bg-transparent md:max-w-2xl md:mx-auto md:grid md:grid-cols-4">
-          <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="playground"> Code Playground</TabsTrigger>
-          <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="insights">Network Insights</TabsTrigger>
-        </TabsList>
+        <div className=" overflow-x-auto">
+          <TabsList className="inline-flex w-full min-w-max md:w-full gap-6 bg-transparent md:max-w-2xl md:mx-auto md:grid md:grid-cols-4">
+            <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="playground"> Code Playground</TabsTrigger>
+            <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="insights">Network Insights</TabsTrigger>
+          </TabsList>
         </div>
+
         {/* Dashboard Tab */}
         <TabsContent value="dashboard">
-           {/* Wallet Info */}
-      <Card className='bg-transparent border-0 shadow-none'>
-        <CardContent className=" ">
-          <div className="flex  justify-end items-end md:items-center gap-4">
-           
-            
-            <div className="flex gap-3">
-              <Button 
-                onClick={fetchAllFTSOPrices} 
-                disabled={loading || !account}
-                className="bg-[#e93b6c] text-white hover:bg-[#d42a5b]"
-              >
-                {loading ?  <div className="flex items-center gap-2"><RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> Refreshing...</div>: <div className="flex items-center gap-2"> <RefreshCw className={`w-4 h-4`} /> Refresh Prices</div>}
-              </Button>
-              
-              <Button className='bg-[#fff1f3] text-black hover:text-black hover:bg-[#fff1f3]'
-                variant={autoRefresh ? "default" : "outline"}
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                disabled={!account}
-              >
-                {autoRefresh ? "Auto Refresh ON" : "Auto Refresh OFF"}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Wallet Info, placed on top of dashboard cards */}
+          <Card className='bg-transparent border-0 shadow-none'>
+            <CardContent className="flex justify-between items-center flex-wrap gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                {walletAddress ? (
+                  <>
+                    <Badge className="bg-[#e93b6c] text-white">
+                      Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    </Badge>
+                    <Badge variant="secondary">
+                      Network: {networkName || "Unknown"}
+                    </Badge>
+                  </>
+                ) : (
+                  <Button onClick={connectWallet} className="bg-[#e93b6c] text-white hover:bg-[#d42a5b]">
+                    Connect Wallet
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={fetchAllFTSOPrices}
+                  disabled={loading || !walletAddress}
+                  className="bg-[#e93b6c] text-white hover:bg-[#d42a5b]"
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> Refreshing...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className={`w-4 h-4`} /> Refresh Prices
+                    </div>
+                  )}
+                </Button>
+
+                <Button className='bg-[#fff1f3] text-black hover:text-black hover:bg-[#fff1f3]'
+                  variant={autoRefresh ? "default" : "outline"}
+                  onClick={() => setAutoRefresh(!autoRefresh)}
+                  disabled={!walletAddress}
+                >
+                  {autoRefresh ? "Auto Refresh ON" : "Auto Refresh OFF"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FTSO_SYMBOLS.map(symbol => (
-              <Card 
-                key={symbol} 
+              <Card
+                key={symbol}
                 className={`cursor-pointer bg-[#fff1f3] transition-all duration-200 ${
                   errors[symbol] ? 'border-red-200 ' : 'hover:shadow-lg'
                 }`}
@@ -483,30 +559,30 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
                       <div className="text-2xl font-bold text-[#e93b6c] mb-3">
                         {ftsoPrices[symbol] ? `$${ftsoPrices[symbol].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}` : "—"}
                       </div>
-                      
+
                       {priceHistory[symbol] && priceHistory[symbol].length > 1 && (
                         <div className="h-16 mb-2">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={priceHistory[symbol]}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#fff" />
-                              <XAxis 
-                                dataKey="time" 
+                              <XAxis
+                                dataKey="time"
                                 tick={false}
                                 axisLine={false}
                                 className="text-[#e93b6c]"
                               />
-                              <YAxis 
+                              <YAxis
                                 tick={false}
                                 axisLine={false}
                                 domain={['dataMin - dataMin * 0.01', 'dataMax + dataMax * 0.01']}
                                 className="text-[#e93b6c]"
                               />
-                              <RechartsTooltip  stroke='#e93b6c' content={<ChartTooltip />} />
-                              <Line 
-                                type="monotone" 
-                                dataKey="price" 
-                                stroke="#e93b6c" 
-                                strokeWidth={2} 
+                              <RechartsTooltip stroke='#e93b6c' content={<ChartTooltip />} />
+                              <Line
+                                type="monotone"
+                                dataKey="price"
+                                stroke="#e93b6c"
+                                strokeWidth={2}
                                 dot={false}
                                 activeDot={{ r: 4, stroke: '#e93b6c', strokeWidth: 2 }}
                               />
@@ -514,7 +590,7 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
                           </ResponsiveContainer>
                         </div>
                       )}
-                      
+
                       {timestamps[symbol] && (
                         <div className="text-xs text-gray-500">
                           Updated: {formatTimeSafe(timestamps[symbol])}
@@ -522,7 +598,7 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
                       )}
                     </>
                   )}
-                  
+
                   <div className="text-xs text-gray-400 mt-2">
                     Click to view contract details
                   </div>
@@ -548,7 +624,7 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
                 <div className="flex flex-wrap gap-2">
                   {FTSO_SYMBOLS.map(symbol => (
                     <Badge
-                    
+
                       key={symbol}
                       variant={selectedTokens.includes(symbol) ? "default" : "outline"}
                       className="cursor-pointer bg-[#e93b6c]"
@@ -580,16 +656,16 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
                   }}
                 />
               </div>
-              
+
               <div className="flex gap-3">
-                <Button className='bg-[#e93b6c] hover:bg-[#e93b6c] ' onClick={runExampleCode} disabled={!account}>
+                <Button className='bg-[#e93b6c] hover:bg-[#e93b6c] ' onClick={runExampleCode} disabled={!walletAddress}>
                   Run Code
                 </Button>
                 <Button variant="outline" onClick={() => navigator.clipboard.writeText(exampleCode)}>
                   Copy Code
                 </Button>
               </div>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Output</CardTitle>
@@ -636,7 +712,7 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
                   </>
                 ) : (
                   <div className="text-center py-4 text-gray-500">
-                    {account ? "Fetching network data..." : "Connect wallet to see network insights"}
+                    {walletAddress ? "Fetching network data..." : "Connect wallet to see network insights"}
                   </div>
                 )}
               </CardContent>
@@ -658,9 +734,9 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
                     <li><strong>On-chain Publication:</strong> Price available for smart contracts</li>
                   </ol>
                 </div>
-                
+
                 <div className="text-xs bg-[#ffe4e8] p-3 rounded-lg">
-                  <strong> Key Benefits:</strong> 
+                  <strong> Key Benefits:</strong>
                   <ul className="mt-1 space-y-1">
                     <li>• Decentralized and manipulation-resistant</li>
                     <li>• Real-time price updates every epoch</li>
@@ -682,49 +758,49 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
             <DialogClose />
           </DialogHeader>
           <div className="space-y-3 mt-4">
-            {selectedProviders.map((provider, idx) => (
+            {selectedProviders.map((providerItem, idx) => (
               <Card key={idx}>
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="font-semibold">Contract Type</div>
-                      <div className="text-gray-600">{provider.provider}</div>
+                      <div className="text-gray-600">{providerItem.provider}</div>
                     </div>
                     <div>
                       <div className="font-semibold">Contract Address</div>
-                      <div className="text-gray-600 text-xs font-mono">{provider.address}</div>
+                      <div className="text-gray-600 text-xs font-mono">{providerItem.address}</div>
                     </div>
-                    {provider.currentPrice && (
+                    {providerItem.currentPrice && (
                       <div>
                         <div className="font-semibold">Current Price</div>
-                        <div className="text-gray-600">${provider.currentPrice.toFixed(4)}</div>
+                        <div className="text-gray-600">${providerItem.currentPrice.toFixed(4)}</div>
                       </div>
                     )}
-                    {provider.timestamp && (
+                    {providerItem.timestamp && (
                       <div>
                         <div className="font-semibold">Last Update</div>
-                        <div className="text-gray-600">{provider.timestamp.toLocaleString()}</div>
+                        <div className="text-gray-600">{providerItem.timestamp.toLocaleString()}</div>
                       </div>
                     )}
-                    {provider.random && (
+                    {providerItem.random && (
                       <div className="md:col-span-2">
                         <div className="font-semibold">Random Seed</div>
-                        <div className="text-gray-600 text-xs font-mono break-all">{provider.random}</div>
+                        <div className="text-gray-600 text-xs font-mono break-all">{providerItem.random}</div>
                       </div>
                     )}
-                    {provider.error && (
+                    {providerItem.error && (
                       <div className="md:col-span-2">
                         <div className="font-semibold text-red-600">Error</div>
-                        <div className="text-red-600">{provider.message}</div>
+                        <div className="text-red-600">{providerItem.message}</div>
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
             ))}
-            
+
             <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
-              This shows real data from the FTSO smart contract. The price is calculated using weighted median 
+              This shows real data from the FTSO smart contract. The price is calculated using weighted median
               consensus from multiple decentralized providers to prevent manipulation.
             </div>
           </div>
