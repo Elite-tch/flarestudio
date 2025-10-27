@@ -24,7 +24,8 @@ export function Header() {
             </div>
 
         <div className="flex-shrink-0">
-       <WalletConnection/>
+
+      {/* */} <WalletConnection/>
         </div>
       </div>
     </header>
