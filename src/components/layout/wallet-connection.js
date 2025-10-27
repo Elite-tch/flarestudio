@@ -86,21 +86,25 @@ export function WalletConnection() {
         </DropdownMenu>
       )}
 
-      <ConnectButton
-        client={client}
-        appMetadata={{
-          name: "FlareStudio",
-          url: "https://flarestudio.xyz",
-        }}
-        chains={[flare, flareTestnet]}
-        theme={lightTheme({
-          colors: {
-            primaryButtonBg: "#e93b6c",
-            primaryButtonText: "#ffffff",
-            connectedButtonBg: "#fff1f3",
-          },
-        })}
-      />
+<ConnectButton
+  client={client}
+  appMetadata={{
+    name: "FlareStudio",
+    url: "https://flarestudio.xyz",
+  }}
+  chains={[flare, flareTestnet]}
+  walletConnect={{
+    projectId: "de9c16eb64e4e99e9edfd3c57e50c440",
+  }}
+  theme={lightTheme({
+    colors: {
+      primaryButtonBg: "#e93b6c",
+      primaryButtonText: "#ffffff",
+      connectedButtonBg: "#fff1f3",
+    },
+  })}
+/>
+
     </div>
   );
 }
