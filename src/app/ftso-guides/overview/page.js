@@ -5,7 +5,7 @@ import { CodeBlock } from "../component/code"
 export default function FTSOOverview() {
   return (
     <div className=" bg-[#ffe4e8] pt-[10%] pb-[5%]">
-     <div className="max-w-6xl mx-auto">
+     <div className="max-w-6xl mx-auto w-[90%]">
 
  {/* Hero Section 
  <motion.div
@@ -162,7 +162,7 @@ async function getCurrentPrice() {
         <p className="text-gray-600 mb-6">
           Continue to the next guide to build your first application with FTSO data feeds.
         </p>
-       <div className="flex items-center justify-between">
+       <div className="flex items-center md:flex-row flex-col justify-between">
        <a
           href="https://dev.flare.network/ftso/guides"
           className="inline-flex items-center px-6 py-3 bg-[#e93b6c] text-white font-medium rounded-lg hover:underline transition-colors"
