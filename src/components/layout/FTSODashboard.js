@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import { loadFtsoContracts, getReadOnlyProvider } from "@/lib/ftsoContracts";
+import { loadFtsoContracts } from "@/lib/ftsoContracts";
 import { RefreshCw, Eye } from "lucide-react"
 import { toast } from "react-hot-toast";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
@@ -53,6 +53,7 @@ const generatePriceMovement = (basePrice, volatility = 0.02) => {
   let currentPrice = basePrice;
   
   for (let i = 0; i < 24; i++) {
+    // Simulate realistic price movement with some randomness
     const change = (Math.random() - 0.5) * volatility * currentPrice;
     currentPrice += change;
     movements.push({
@@ -83,30 +84,18 @@ export default function FTSODashboard() {
   const account = useActiveAccount();
   const activeChain = useActiveWalletChain();
 
-  // Get provider - now supports read-only mode
-  const getProvider = () => {
-    // If wallet is connected, use browser provider
-    if (typeof window !== 'undefined' && window.ethereum && account) {
-      return new ethers.BrowserProvider(window.ethereum);
-    }
-    // Otherwise use read-only provider
-    return getReadOnlyProvider();
-  };
-
+  const getProvider = () => (typeof window !== 'undefined' && window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
   const getSigner = async () => { 
-    const provider = getProvider();
-    // Only try to get signer if wallet is connected
-    if (account && typeof window !== 'undefined' && window.ethereum) {
-      return await provider.getSigner();
-    }
-    // Return provider for read-only access
-    return provider;
+    const provider = getProvider(); 
+    return provider && account ? await provider.getSigner() : null; 
   };
 
   // Update price history with real data and generate realistic charts
   const updatePriceHistory = (symbol, newPrice) => {
     setPriceHistory(prev => {
+      // Generate realistic 24-hour price movement data
       const realisticData = generatePriceMovement(newPrice);
+      
       return {
         ...prev,
         [symbol]: realisticData
@@ -115,6 +104,11 @@ export default function FTSODashboard() {
   };
 
   const fetchAllFTSOPrices = async () => {
+    if (!account) {
+      toast.error("Connect wallet first.");
+      return;
+    }
+
     setLoading(true);
     const newPrices = {};
     const newTimestamps = {};
@@ -122,9 +116,13 @@ export default function FTSODashboard() {
     setRefreshing(true)
 
     try {
-      // Use read-only provider - no wallet needed!
-      const provider = getReadOnlyProvider();
-      const contracts = await loadFtsoContracts(provider);
+      const signer = await getSigner();
+      if (!signer) {
+        toast.error("Unable to get signer");
+        return;
+      }
+
+      const contracts = await loadFtsoContracts(signer);
 
       // Fetch network stats from FTSO manager
       try {
@@ -135,8 +133,8 @@ export default function FTSODashboard() {
           epochStart: Number(epochData._startTimestamp),
           epochEnd: Number(epochData._endTimestamp),
           activeFTSOs: FTSO_SYMBOLS.length,
-          totalProviders: Math.floor(Math.random() * 50) + 30,
-          network: 'Flare Coston Testnet'
+          totalProviders: Math.floor(Math.random() * 50) + 30, // Simulated provider count
+          network: activeChain?.name || 'Flare Network'
         });
       } catch (error) {
         console.log("Could not fetch epoch data:", error);
@@ -147,15 +145,18 @@ export default function FTSODashboard() {
         try {
           const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
           if (ftsoAddress && ftsoAddress !== ethers.ZeroAddress) {
-            const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, provider);
+            const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, signer);
             const [price, timestamp] = await ftso.getCurrentPrice();
-            const priceValue = Number(price) / 1e5;
+            const priceValue = Number(price) / 1e5; // Assuming 5 decimals
             
             newPrices[symbol] = priceValue;
+            // Store as ISO string for proper serialization
             newTimestamps[symbol] = new Date(Number(timestamp) * 1000).toISOString();
             
+            // Update price history with realistic data
             updatePriceHistory(symbol, priceValue);
             
+            // Clear any previous errors for this symbol
             if (errors[symbol]) {
               delete newErrors[symbol];
             }
@@ -186,22 +187,25 @@ export default function FTSODashboard() {
       toast.error("Failed to fetch prices");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
   const fetchProviderDetails = async (symbol) => {
+    if (!account) return;
+    
     try {
-      const provider = getReadOnlyProvider();
-      const contracts = await loadFtsoContracts(provider);
+      const signer = await getSigner();
+      const contracts = await loadFtsoContracts(signer);
       const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
       
       if (ftsoAddress && ftsoAddress !== ethers.ZeroAddress) {
-        const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, provider);
+        const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, signer);
         
+        // Fetch real data from the contract
         const [currentPrice, currentTimestamp] = await ftso.getCurrentPrice();
         const random = await ftso.getCurrentRandom();
         
+        // Use only real contract data
         setSelectedProviders([
           { 
             provider: "FTSO Contract", 
@@ -232,57 +236,63 @@ export default function FTSODashboard() {
   };
 
   const runExampleCode = async () => {
-    setCodeOutput("⏳ Fetching FTSO price data for multiple tokens...");
+    if (!account) {
+      setCodeOutput(" Error: Please connect your wallet first");
+      return;
+    }
+
+    setCodeOutput(" Fetching FTSO price data for multiple tokens...");
     
     try {
-      const provider = getReadOnlyProvider();
-      const contracts = await loadFtsoContracts(provider);
+      const signer = await getSigner();
+      const contracts = await loadFtsoContracts(signer);
       
       const results = [];
       
+      // Fetch prices for selected tokens
       for (const symbol of selectedTokens) {
         try {
           const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
           
           if (ftsoAddress === ethers.ZeroAddress) {
-            results.push(`❌ ${symbol}: No FTSO contract found`);
+            results.push(` ${symbol}: No FTSO contract found`);
             continue;
           }
           
-          const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, provider);
+          const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, signer);
           const [price, timestamp] = await ftso.getCurrentPrice();
           const priceUSD = Number(price) / 1e5;
           
-          results.push(`✅ ${symbol}/USD: $${priceUSD.toFixed(4)} (${new Date(Number(timestamp) * 1000).toLocaleTimeString()})`);
+          results.push(` ${symbol}/USD: $${priceUSD.toFixed(4)} (${new Date(Number(timestamp) * 1000).toLocaleTimeString()})`);
         } catch (error) {
-          results.push(`❌ ${symbol}: ${error.message}`);
+          results.push(` ${symbol}: ${error.message}`);
         }
       }
 
-      const output = `✨ FTSO Price Data - Multiple Tokens:
+      const output = ` FTSO Price Data - Multiple Tokens:
 
 ${results.join('\n')}
 
-🌐 Network: Flare Coston Testnet (Read-Only Mode)
-📊 All prices are real on-chain data from Flare FTSO contracts
-💡 No wallet connection required!`;
+ Network: ${activeChain?.name || 'Unknown Network'}
+ All prices are real on-chain data from Flare FTSO contracts`;
 
       setCodeOutput(output);
     } catch (error) {
-      setCodeOutput(`❌ Error fetching FTSO data: ${error.message}\n\nPlease check your internet connection and try again.`);
+      setCodeOutput(` Error fetching FTSO data: ${error.message}\n\nMake sure you're connected to Flare network and try again.`);
     }
   };
 
-  // Auto-refresh - now works without wallet!
+  // Auto-refresh with real data
   useEffect(() => {
-    if (autoRefresh) {
+    if (autoRefresh && account) {
       fetchAllFTSOPrices();
       const interval = setInterval(fetchAllFTSOPrices, 60000);
       return () => clearInterval(interval);
     }
-  }, [autoRefresh]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, autoRefresh]);
 
-  // Load cached data on mount
+  // Load cached real data with proper date handling
   useEffect(() => {
     const cachedPrices = localStorage.getItem('ftsoPrices');
     const cachedTimestamps = localStorage.getItem('ftsoTimestamps');
@@ -308,11 +318,11 @@ ${results.join('\n')}
     }
   }, []);
 
-  const exampleCode = `// 🔥 Flare FTSO Price Fetching Example (NO WALLET REQUIRED!)
-// This code shows how to fetch real-time prices without connecting a wallet
+  const exampleCode = `//  Flare FTSO Price Fetching Example
+// This code shows how to fetch real-time prices from Flare's FTSO
 
 import { ethers } from "ethers";
-import { loadFtsoContracts, getReadOnlyProvider } from "@/lib/ftsoContracts";
+import { loadFtsoContracts } from "@/lib/ftsoContracts";
 
 // FTSO Contract ABI - Minimal interface for price data
 const FTSO_ABI = [
@@ -320,11 +330,13 @@ const FTSO_ABI = [
 ];
 
 async function fetchFTSOPrice(symbol = "ETH") {
-  // 1. Create a read-only provider (no wallet needed!)
-  const provider = getReadOnlyProvider();
+  // 1. Connect to wallet and get signer
+  if (!window.ethereum) throw new Error("Install MetaMask first");
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
   
-  // 2. Load FTSO contracts using the read-only provider
-  const contracts = await loadFtsoContracts(provider);
+  // 2. Load FTSO contracts using the registry
+  const contracts = await loadFtsoContracts(signer);
   
   // 3. Get the FTSO contract address for the symbol
   const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
@@ -333,10 +345,10 @@ async function fetchFTSOPrice(symbol = "ETH") {
     throw new Error(\`No FTSO found for symbol: \${symbol}\`);
   }
   
-  // 4. Create FTSO contract instance with read-only provider
-  const ftso = new ethers.Contract(ftsoAddress, FTSO_ABI, provider);
+  // 4. Create FTSO contract instance
+  const ftso = new ethers.Contract(ftsoAddress, FTSO_ABI, signer);
   
-  // 5. Fetch current price and timestamp (read-only call)
+  // 5. Fetch current price and timestamp
   const [price, timestamp] = await ftso.getCurrentPrice();
   
   // 6. Convert price to USD (FTSO prices are usually in 5 decimals)
@@ -351,31 +363,25 @@ async function fetchFTSOPrice(symbol = "ETH") {
   };
 }
 
-// ✨ NEW: Function to fetch multiple token prices (NO WALLET!)
+//  NEW: Function to fetch multiple token prices
 async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
-  const provider = getReadOnlyProvider();
-  const contracts = await loadFtsoContracts(provider);
   const results = [];
   
   for (const symbol of symbols) {
     try {
-      const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
-      const ftso = new ethers.Contract(ftsoAddress, FTSO_ABI, provider);
-      const [price] = await ftso.getCurrentPrice();
-      const priceUSD = Number(price) / 1e5;
-      
-      results.push(\`✅ \${symbol}/USD: $\${priceUSD.toFixed(4)}\`);
+      const priceData = await fetchFTSOPrice(symbol);
+      results.push(\` \${symbol}/USD: $\${priceData.priceUSD.toFixed(4)}\`);
     } catch (error) {
-      results.push(\`❌ \${symbol}: \${error.message}\`);
+      results.push(\` \${symbol}: \${error.message}\`);
     }
   }
   
   return results;
 }
 
-// Usage examples (works without wallet!):
+// Usage examples:
 // fetchFTSOPrice("ETH").then(console.log).catch(console.error);
-// fetchMultipleFTSOPrices().then(results => console.log(results.join('\\n')));
+// fetchMultipleFTSOPrices().then(results => console.log(results.join('\\\\n')));
 `;
 
   // Custom chart tooltip
@@ -396,11 +402,6 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
       <div className="text-center">
         <h1 className="text-3xl font-bold">Flare FTSO Oracle Dashboard</h1>
         <p className="text-gray-600 mt-2">Real decentralized price data from Flare Time Series Oracle</p>
-        {!account && (
-          <Badge variant="outline" className="mt-2">
-            📡 Read-Only Mode (No Wallet Required)
-          </Badge>
-        )}
       </div>
 
      
@@ -410,7 +411,7 @@ async function fetchMultipleFTSOPrices(symbols = ["BTC", "ETH", "XRP", "ADA"]) {
         <TabsList className="inline-flex w-full min-w-max md:w-full gap-6 bg-transparent md:max-w-2xl md:mx-auto md:grid md:grid-cols-4">
           <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="playground"> Code Playground</TabsTrigger>
-          <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="insights">Network Insights</TabsTrigger>
+        {/*   <TabsTrigger className='md:px-8 px-6 whitespace-nowrap' value="insights">Network Insights</TabsTrigger> */}
         </TabsList>
         </div>
         {/* Dashboard Tab */}

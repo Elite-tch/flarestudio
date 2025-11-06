@@ -19,14 +19,12 @@ export function TabsNavigation() {
               Network Overview
             </TabsTrigger>
             <TabsTrigger value="ftso" className="whitespace-nowrap">
-              FTSO Data
+            FTSO Price
             </TabsTrigger>
             <TabsTrigger value="rpc" className="whitespace-nowrap">
               RPC Tester
             </TabsTrigger>
-            <TabsTrigger value="snippets" className="whitespace-nowrap">
-              Code Snippets
-            </TabsTrigger>
+           
           </TabsList>
         </div>
         
@@ -43,10 +41,7 @@ export function TabsNavigation() {
         <RpcTester/>
         </TabsContent>
 
-        <TabsContent value="snippets">
-       Coming soon      
-         </TabsContent>
-
+       
 
         
 
