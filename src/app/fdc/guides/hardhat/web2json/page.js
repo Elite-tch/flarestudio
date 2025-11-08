@@ -5,7 +5,7 @@ import { Screenshot } from "@/app/ftso-guides/build-first-app/component/screensh
 
 export default function Web2JSONHardhatComplete() {
   return (
-    <div className=" pt-[30%] pb-[3%] md:pt-[12%] bg-[#ffe4e8]">
+    <div className=" pt-[30%] pb-[3%] md:pt-[12%] bg-[#ffe4e8] overflow-hidden">
       <div className="max-w-6xl mx-auto w-[90%]">
        {/* Header */}
        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-10">
@@ -461,7 +461,7 @@ const abiSignature = \`{
       <p className="">
         <strong>Language Translation Analogy:</strong><br/>
         • <strong>Human</strong>: &quot;Web2Json&quot; (English)<br/>
-        • <strong>Computer</strong>: &quot;0x576562324a736f6e000000000000000000000000000000000000000000000000&quot; (Computer language)
+        • <strong>Computer</strong>: &quot;0x576562324a736f6e0..&quot; (Computer language)
       </p>
     </div>
 
