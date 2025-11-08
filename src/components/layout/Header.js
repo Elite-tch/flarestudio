@@ -24,7 +24,7 @@ export function Header() {
 
   const fdcGuides = [
     { name: "Getting Started", href: "/fdc/overview" },
-    { name: "Web2JSON", href: "/fdc/web2json" },
+    { name: "Web2JSON", href: "/fdc/guides/hardhat/web2json" },
    // { name: "Getting Attestations", href: "/fdc/getting-attestations" },
    // { name: "Attestation Types", href: "/fdc/attestation-types" }
   ]

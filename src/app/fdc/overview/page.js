@@ -124,70 +124,66 @@ export default function FDCOverview() {
       </motion.section>
 
       {/* Key Features */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="mb-12"
-      >
-        <h2 className="md:text-3xl text-2xl font-bold text-gray-900 mb-6"> Why FDC is Revolutionary</h2>
-        
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl   shadow-sm">
-            <div className="text-2xl mb-3"></div>
-            <h3 className="text-xl font-semibold mb-2 ">Any API, Any Data</h3>
-            <p className="text-gray-700">
-              Connect to REST APIs, JSON endpoints, or any web service. Stock prices, weather data, 
-              sports scores - if it&apos;s on the web, FDC can bring it on-chain.
-            </p>
-          </div>
+      {/* Key Features */}
+<motion.section
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, delay: 0.3 }}
+  className="mb-12"
+>
+  <h2 className="md:text-3xl text-2xl font-bold text-gray-900 mb-6">Why FDC is Revolutionary</h2>
+  
+  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl shadow-sm">
+      <h3 className="text-xl font-semibold mb-2">Any API, Any Data</h3>
+      <p className="text-gray-700">
+        Connect to REST APIs, JSON endpoints, or common web services. Stock prices, weather data,
+        sports scores, and more. If it is available online, FDC can bring it on chain in a trusted way.
+      </p>
+    </div>
 
-          <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl  shadow-sm">
-            <div className="text-2xl mb-3"></div>
-            <h3 className="text-xl font-semibold mb-2 ">Cryptographic Proof</h3>
-            <p className="text-gray-700">
-              Every piece of data comes with a verifiable attestation. No more trusting third parties - 
-              mathematically prove your data is authentic.
-            </p>
-          </div>
+    <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl shadow-sm">
+      <h3 className="text-xl font-semibold mb-2">Cryptographic Proof</h3>
+      <p className="text-gray-700">
+        Every piece of data comes with a verifiable attestation. This removes blind trust and makes it
+        possible to prove that your data is authentic using mathematics.
+      </p>
+    </div>
 
-          <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl  shadow-sm">
-            <div className="text-2xl mb-3"></div>
-            <h3 className="text-xl font-semibold mb-2 ">Real-Time Data</h3>
-            <p className="text-gray-700">
-              Get fresh data when you need it. FDC can fetch updated information on-demand, 
-              keeping your smart contracts connected to live data sources.
-            </p>
-          </div>
+    <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl shadow-sm">
+      <h3 className="text-xl font-semibold mb-2">Fresh Data When Needed</h3>
+      <p className="text-gray-700">
+        Fetch updated information when your contract requires it. This keeps your smart contracts
+        connected to data that changes often.
+      </p>
+    </div>
 
-          <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl shadow-sm">
-            <div className="text-2xl mb-3"></div>
-            <h3 className="text-xl font-semibold mb-2 ">Cost Effective</h3>
-            <p className="text-gray-700">
-              Only pay for the data you actually use. No need to run your own oracles or 
-              maintain infrastructure for every data source.
-            </p>
-          </div>
+    <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl shadow-sm">
+      <h3 className="text-xl font-semibold mb-2">Cost Effective</h3>
+      <p className="text-gray-700">
+        Pay only for the data you use. There is no need to run your own oracles or manage separate
+        infrastructure for every data source.
+      </p>
+    </div>
 
-          <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl shadow-sm">
-            <div className="text-2xl mb-3"></div>
-            <h3 className="text-xl font-semibold mb-2 ">Decentralized</h3>
-            <p className="text-gray-700">
-              Multiple independent attestation providers ensure no single point of failure. 
-              Your data remains reliable and available.
-            </p>
-          </div>
+    <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl shadow-sm">
+      <h3 className="text-xl font-semibold mb-2">Decentralized</h3>
+      <p className="text-gray-700">
+        Multiple independent attestation providers reduce the chance of failure. Your data remains
+        reliable and available even if one provider has issues.
+      </p>
+    </div>
 
-          <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl  shadow-sm">
-            <div className="text-2xl mb-3"></div>
-            <h3 className="text-xl font-semibold mb-2 ">Developer Friendly</h3>
-            <p className="text-gray-700">
-              Simple integration with existing smart contracts. Clear documentation and 
-              multiple integration options make getting started easy.
-            </p>
-          </div>
-        </div>
-      </motion.section>
+    <div className="bg-[#fff1f3] p-4 md:p-6 rounded-xl shadow-sm">
+      <h3 className="text-xl font-semibold mb-2">Developer Friendly</h3>
+      <p className="text-gray-700">
+        Simple integration into your smart contracts. Clear documentation and flexible options make
+        it easy to start building with FDC.
+      </p>
+    </div>
+  </div>
+</motion.section>
+
 
       {/* Use Cases */}
       <motion.section
