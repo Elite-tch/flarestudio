@@ -7,6 +7,7 @@ import {
   lightTheme  
 } from "thirdweb/react";
 import { createThirdwebClient } from "thirdweb";
+import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu, 
@@ -42,6 +43,30 @@ const client = createThirdwebClient({
   clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "demo-client-id",
 });
 
+// ADD THIS WALLETS CONFIGURATION
+const wallets = [
+  inAppWallet({
+    auth: {
+      options: [
+        "google",
+        "discord",
+        "telegram", 
+        "farcaster",
+        "email",
+        "x",
+        "passkey",
+        "phone",
+      ],
+    },
+  }),
+  createWallet("io.metamask"),
+  createWallet("com.trustwallet.app"),
+  createWallet("me.rainbow"),
+  createWallet("io.rabby"),
+  createWallet("io.zerion.wallet"),
+  createWallet("app.phantom"), // Add Phantom for mobile
+];
+
 export function WalletConnection() {
   const account = useActiveAccount();
   const activeChain = useActiveWalletChain();
@@ -65,7 +90,7 @@ export function WalletConnection() {
               size="lg"
               className="gap-1 md:gap-2 py-6 focus:ring-0 text-xs border-0 outline-none md:text-sm bg-[#fff1f3] hover:bg-white"
             >
-              <span className="w-2 h-2 rounded-full bg-accent animate-puls" />
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <span className="hidden sm:inline">
                 {activeChain.id === 14 ? "Flare" : "Coston"}
               </span>
@@ -86,48 +111,48 @@ export function WalletConnection() {
         </DropdownMenu>
       )}
 
-<ConnectButton
-  client={client}
-  appMetadata={{
-    name: "FlareStudio",
-    description: "Interactive Flare Blockchain Playground",
-    url: typeof window !== 'undefined' ? window.location.origin : "https://flarestudios.com",
-    iconUrl: typeof window !== 'undefined' ? `${window.location.origin}/flarelogo.png` : "https://flarestudios.com/flarelogo.png",
-  }}
-  chains={[flare, flareTestnet]}
-  walletConnect={{
-    projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-client-id",
-    redirect: {
-      native: "metamask://",
-      universal: "https://metamask.app.link",
-    },
-    metadata: {
-      name: "FlareStudio",
-      description: "Interactive Flare Blockchain Playground",
-      url: typeof window !== 'undefined' ? window.location.origin : "https://flarestudios.com",
-      icons: [typeof window !== 'undefined' ? `${window.location.origin}/flarelogo.png` : "https://flarestudios.com/flarelogo.png"],
-    },
-    qrModalOptions: {
-      themeMode: "light",
-      themeVariables: {
-        "--wcm-z-index": "1000",
-      },
-    },
-  }}
-  connectModal={{
-    size: "compact",
-    title: "Connect to FlareStudio",
-    showThirdwebBranding: false,
-  }}
-  theme={lightTheme({
-    colors: {
-      primaryButtonBg: "#e93b6c",
-      primaryButtonText: "#ffffff",
-      connectedButtonBg: "#fff1f3",
-    },
-  })}
-/>
-
+      <ConnectButton
+        client={client}
+        wallets={wallets} // ADD THIS LINE - CRITICAL FOR MOBILE
+        appMetadata={{
+          name: "FlareStudio",
+          description: "Interactive Flare Blockchain Playground",
+          url: typeof window !== 'undefined' ? window.location.origin : "https://flarestudios.com",
+          iconUrl: typeof window !== 'undefined' ? `${window.location.origin}/flarelogo.png` : "https://flarestudios.com/flarelogo.png",
+        }}
+        chains={[flare, flareTestnet]}
+        walletConnect={{
+          projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-client-id",
+          redirect: {
+            native: "metamask://",
+            universal: "https://metamask.app.link",
+          },
+          metadata: {
+            name: "FlareStudio",
+            description: "Interactive Flare Blockchain Playground",
+            url: typeof window !== 'undefined' ? window.location.origin : "https://flarestudios.com",
+            icons: [typeof window !== 'undefined' ? `${window.location.origin}/flarelogo.png` : "https://flarestudios.com/flarelogo.png"],
+          },
+          qrModalOptions: {
+            themeMode: "light",
+            themeVariables: {
+              "--wcm-z-index": "1000",
+            },
+          },
+        }}
+        connectModal={{
+          size: "compact",
+          title: "Connect to FlareStudio",
+          showThirdwebBranding: false,
+        }}
+        theme={lightTheme({
+          colors: {
+            primaryButtonBg: "#e93b6c",
+            primaryButtonText: "#ffffff",
+            connectedButtonBg: "#fff1f3",
+          },
+        })}
+      />
     </div>
   );
 }
