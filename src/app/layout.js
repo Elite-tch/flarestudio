@@ -4,6 +4,7 @@ import { ThirdwebProvider } from "thirdweb/react"
 import { Header } from "@/components/layout/Header"
 import { Toaster } from "react-hot-toast"
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -59,6 +60,7 @@ export default function RootLayout({ children }) {
           <Header />
           {children}
           <Analytics />
+          <SpeedInsights/>
           <Toaster position="top-right" />
         </ThirdwebProvider>
       </body>
