@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const {
   GEMINI_API_KEY,
 } = process.env;
-
+//const apiKey = "AIzaSyACvlmo2kvHTO0MoYMlc_5W6__ZUcvDmb0";
 const genAI = new GoogleGenerativeAI( GEMINI_API_KEY);
 
 async function retryWithBackoff(fn, retries = 3, delay = 2000) {
