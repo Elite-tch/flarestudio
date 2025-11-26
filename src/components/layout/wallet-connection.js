@@ -1,19 +1,20 @@
 "use client";
-import { 
-  ConnectButton, 
-  useActiveAccount, 
-  useActiveWalletChain, 
-  useSwitchActiveWalletChain, 
-  lightTheme  
+import {
+  ConnectButton,
+  useActiveAccount,
+  useActiveWalletChain,
+  useSwitchActiveWalletChain,
+  lightTheme
 } from "thirdweb/react";
 import { createThirdwebClient } from "thirdweb";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 
@@ -50,7 +51,7 @@ const wallets = [
       options: [
         "google",
         "discord",
-        "telegram", 
+        "telegram",
         "farcaster",
         "email",
         "x",
@@ -112,6 +113,7 @@ export function WalletConnection() {
       )}
 
       <ConnectButton
+     
         client={client}
         wallets={wallets} // ADD THIS LINE - CRITICAL FOR MOBILE
         appMetadata={{

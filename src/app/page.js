@@ -3,8 +3,8 @@ import { TabsNavigation } from "@/components/layout/tab-navigation";
 export default function Home() {
   return (
     <div className=" ">
-     <HeroSection/>
-     <TabsNavigation/>
+      <HeroSection />
+      <TabsNavigation />
     </div>
   );
 }

@@ -1,9 +1,24 @@
 "use client"
 
+import dynamic from 'next/dynamic'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"
-import FTSOPlayground from "./FTSODashboard"
-import NetworkOverview from "./NetworkOverview"
-import RpcTester from "./RpcTester"
+import { Loader2 } from "lucide-react"
+
+// Lazy load heavy components
+const NetworkOverview = dynamic(() => import("./NetworkOverview"), {
+  loading: () => <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-[#e93b6c]" /></div>,
+  ssr: false // Disable SSR for these dashboard components to speed up initial HTML
+})
+
+const FTSOPlayground = dynamic(() => import("./FTSODashboard"), {
+  loading: () => <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-[#e93b6c]" /></div>,
+  ssr: false
+})
+
+const RpcTester = dynamic(() => import("./RpcTester"), {
+  loading: () => <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-[#e93b6c]" /></div>,
+  ssr: false
+})
 //import { FTSODashboard } from "./ftso-dashboard"
 //import { FTSODashboard } from "./ftso-dashboard"
 //import { RPCTester } from "./rpc-tester"
@@ -45,10 +60,10 @@ export function TabsNavigation() {
 
         
 
-       
+        
 
 
-       
+        
       </Tabs>
     </section>
   )

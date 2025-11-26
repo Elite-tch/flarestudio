@@ -1,10 +1,11 @@
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { ThirdwebProvider } from "thirdweb/react"
-import { Header } from "@/components/layout/Header"
 import { Toaster } from "react-hot-toast"
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import Header from "@/components/layout/Header";
+//import { GeneratorButton } from "@/components/layout/GeneratorButton";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -17,6 +18,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata = {
+  metadataBase: new URL("https://www.flarestudio.xyz"),
   title: "FlareStudio - Flare Network Developer Toolkit & Playground",
   description:
     "The ultimate Flare Network developer platform. Connect wallets, access FTSO price feeds, bring Web2 data on-chain with FDC, test RPC calls, and deploy with ready-to-use Hardhat & Foundry examples.",
@@ -40,8 +42,11 @@ export const metadata = {
     card: "summary_large_image",
     title: "FlareStudio - Flare Network Developer Toolkit",
     description: "The all-in-one platform for building on Flare Network with FTSO, FDC, and interactive code examples.",
-    creator: "@yourhandle",
-    images: ["https://flarestudio.vercel.app/twitter-image.png"], // Add your Twitter handle
+    creator: "@FlareNetworks", // Updated to official handle or user's handle
+    images: ["/flarelogo.png"],
+  },
+  alternates: {
+    canonical: "https://www.flarestudio.xyz",
   },
   robots: {
     index: true,
@@ -52,15 +57,16 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-       <head>
+      <head>
         <title>FlareStudio - Flare Network Developer Toolkit & Playground</title>
       </head>
       <body className="font-sans bg-background text-foreground">
         <ThirdwebProvider>
           <Header />
           {children}
+         {/*  <GeneratorButton />*/}
           <Analytics />
-          <SpeedInsights/>
+          <SpeedInsights />
           <Toaster position="top-right" />
         </ThirdwebProvider>
       </body>
