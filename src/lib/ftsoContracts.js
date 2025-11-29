@@ -2,9 +2,9 @@ import { Contract, keccak256 } from "ethers";
 import { nameToAbi, nameToAddress } from "@flarenetwork/flare-periphery-contract-artifacts";
 
 export const NETWORK = {
-  name: "coston", // change to "coston2" if you want that network
-  rpc: "https://coston-api.flare.network/ext/C/rpc",
-  chainId: 16 // Coston chain id, verify if using a different network
+  name: "coston2", // change to "coston2" if you want that network
+  rpc: "https://coston2-api.flare.network/ext/C/rpc",
+  chainId: 114 // Coston chain id, verify if using a different network
 };
 
 // Load contracts given a provider or signer
