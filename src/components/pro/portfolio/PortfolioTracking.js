@@ -16,24 +16,56 @@ import {
 
 /**
  * PortfolioTracking Component
- * Multi-wallet dashboard with real blockchain data
+ * Multi-wallet dashboard with real blockchain data and local persistence
  */
 export function PortfolioTracking() {
     const [network, setNetwork] = useState('mainnet') // 'mainnet' or 'testnet'
     const [wallets, setWallets] = useState([])
+    const [projects, setProjects] = useState([])
     const [loading, setLoading] = useState(false)
     const [flrPrice, setFlrPrice] = useState(0)
+
+    // Form states
     const [newWalletAddress, setNewWalletAddress] = useState('')
     const [newWalletName, setNewWalletName] = useState('')
     const [showAddForm, setShowAddForm] = useState(false)
 
-    // Projects state (Project Monitoring tab)
-    const [projects, setProjects] = useState([])
-    const [showAddProjectForm, setShowAddProjectForm] = useState(false)
     const [newProjectName, setNewProjectName] = useState('')
     const [newProjectAddress, setNewProjectAddress] = useState('')
+    const [showAddProjectForm, setShowAddProjectForm] = useState(false)
 
     const networkConfig = getNetworkConfig(network)
+
+    // Load initial state from localStorage
+    useEffect(() => {
+        const savedWallets = localStorage.getItem('flare_portfolio_wallets')
+        const savedProjects = localStorage.getItem('flare_portfolio_projects')
+
+        if (savedWallets) {
+            try {
+                setWallets(JSON.parse(savedWallets))
+            } catch (e) {
+                console.error("Failed to parse saved wallets", e)
+            }
+        }
+
+        if (savedProjects) {
+            try {
+                setProjects(JSON.parse(savedProjects))
+            } catch (e) {
+                console.error("Failed to parse saved projects", e)
+            }
+        }
+    }, [])
+
+    // Save to localStorage whenever state changes
+    useEffect(() => {
+        localStorage.setItem('flare_portfolio_wallets', JSON.stringify(wallets))
+    }, [wallets])
+
+    useEffect(() => {
+        localStorage.setItem('flare_portfolio_projects', JSON.stringify(projects))
+    }, [projects])
 
     // Fetch FLR price
     useEffect(() => {
@@ -51,24 +83,56 @@ export function PortfolioTracking() {
         }
     }, [network])
 
+    // Refresh project data when network changes
+    useEffect(() => {
+        if (projects.length > 0) {
+            refreshProjects()
+        }
+    }, [network])
+
     const refreshWallets = async () => {
         setLoading(true)
-        const updatedWallets = await Promise.all(
-            wallets.map(async (wallet) => {
-                const balance = await getWalletBalance(wallet.address, network)
-                const txCount = await getTransactionCount(wallet.address, network)
-                const value = (parseFloat(balance) * flrPrice).toFixed(2)
+        try {
+            const updatedWallets = await Promise.all(
+                wallets.map(async (wallet) => {
+                    const balance = await getWalletBalance(wallet.address, network)
+                    const txCount = await getTransactionCount(wallet.address, network)
+                    const value = (parseFloat(balance) * flrPrice).toFixed(2)
 
-                return {
-                    ...wallet,
-                    balance: `${parseFloat(balance).toFixed(4)} ${networkConfig.currency}`,
-                    value: `$${value}`,
-                    txCount
-                }
-            })
-        )
-        setWallets(updatedWallets)
-        setLoading(false)
+                    return {
+                        ...wallet,
+                        balance: `${parseFloat(balance).toFixed(4)} ${networkConfig.currency}`,
+                        value: `$${value}`,
+                        txCount
+                    }
+                })
+            )
+            setWallets(updatedWallets)
+        } catch (error) {
+            console.error("Error refreshing wallets:", error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const refreshProjects = async () => {
+        setLoading(true)
+        try {
+            const updatedProjects = await Promise.all(
+                projects.map(async (project) => {
+                    if (project.address && isValidAddress(project.address)) {
+                        const txCount = await getTransactionCount(project.address, network)
+                        return { ...project, txCount, status: 'Active' }
+                    }
+                    return project
+                })
+            )
+            setProjects(updatedProjects)
+        } catch (error) {
+            console.error("Error refreshing projects:", error)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleAddWallet = async () => {
@@ -82,24 +146,36 @@ export function PortfolioTracking() {
             return
         }
 
-        setLoading(true)
-        const balance = await getWalletBalance(newWalletAddress, network)
-        const txCount = await getTransactionCount(newWalletAddress, network)
-        const value = (parseFloat(balance) * flrPrice).toFixed(2)
-
-        const newWallet = {
-            address: newWalletAddress,
-            name: newWalletName || `Wallet ${wallets.length + 1}`,
-            balance: `${parseFloat(balance).toFixed(4)} ${networkConfig.currency}`,
-            value: `$${value}`,
-            txCount
+        // Check for duplicates
+        if (wallets.some(w => w.address.toLowerCase() === newWalletAddress.toLowerCase())) {
+            alert('Wallet already added')
+            return
         }
 
-        setWallets([...wallets, newWallet])
-        setNewWalletAddress('')
-        setNewWalletName('')
-        setShowAddForm(false)
-        setLoading(false)
+        setLoading(true)
+        try {
+            const balance = await getWalletBalance(newWalletAddress, network)
+            const txCount = await getTransactionCount(newWalletAddress, network)
+            const value = (parseFloat(balance) * flrPrice).toFixed(2)
+
+            const newWallet = {
+                address: newWalletAddress,
+                name: newWalletName || `Wallet ${wallets.length + 1}`,
+                balance: `${parseFloat(balance).toFixed(4)} ${networkConfig.currency}`,
+                value: `$${value}`,
+                txCount
+            }
+
+            setWallets([...wallets, newWallet])
+            setNewWalletAddress('')
+            setNewWalletName('')
+            setShowAddForm(false)
+        } catch (error) {
+            console.error("Error adding wallet:", error)
+            alert("Failed to fetch wallet data. Please check the address and network.")
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleRemoveWallet = (index) => {
@@ -112,24 +188,39 @@ export function PortfolioTracking() {
             return
         }
 
-        // pro tier supports up to 3 projects, show warning when reached
+        // pro tier supports up to 3 projects
         if (projects.length >= 3) {
             alert('Pro tier allows up to 3 projects. Upgrade to Enterprise for unlimited.')
             return
         }
 
         setLoading(true)
+        try {
+            let txCount = 0
+            let status = 'Pending'
 
-        const project = {
-            name: newProjectName.trim(),
-            address: newProjectAddress.trim() || 'N/A'
+            if (newProjectAddress && isValidAddress(newProjectAddress)) {
+                txCount = await getTransactionCount(newProjectAddress, network)
+                status = 'Active'
+            }
+
+            const project = {
+                name: newProjectName.trim(),
+                address: newProjectAddress.trim() || 'N/A',
+                txCount,
+                status,
+                addedAt: new Date().toISOString()
+            }
+
+            setProjects([...projects, project])
+            setNewProjectName('')
+            setNewProjectAddress('')
+            setShowAddProjectForm(false)
+        } catch (error) {
+            console.error("Error adding project:", error)
+        } finally {
+            setLoading(false)
         }
-
-        setProjects([...projects, project])
-        setNewProjectName('')
-        setNewProjectAddress('')
-        setShowAddProjectForm(false)
-        setLoading(false)
     }
 
     const handleRemoveProject = (index) => {
@@ -137,16 +228,16 @@ export function PortfolioTracking() {
     }
 
     const totalBalance = wallets.reduce((sum, wallet) => {
-        const balance = parseFloat(wallet.balance.split(' ')[0])
-        return sum + balance
+        const balance = parseFloat(wallet.balance ? wallet.balance.split(' ')[0] : '0')
+        return sum + (isNaN(balance) ? 0 : balance)
     }, 0)
 
     const totalValue = wallets.reduce((sum, wallet) => {
-        const value = parseFloat(wallet.value.replace('$', ''))
-        return sum + value
+        const value = parseFloat(wallet.value ? wallet.value.replace('$', '') : '0')
+        return sum + (isNaN(value) ? 0 : value)
     }, 0)
 
-    const totalTxs = wallets.reduce((sum, wallet) => sum + wallet.txCount, 0)
+    const totalTxs = wallets.reduce((sum, wallet) => sum + (wallet.txCount || 0), 0)
 
     return (
         <div className="space-y-6">
@@ -445,6 +536,20 @@ export function PortfolioTracking() {
                                                 <div className="font-semibold text-gray-900">{project.name}</div>
                                                 <div className="text-sm font-mono text-gray-500">{project.address}</div>
                                             </div>
+
+                                            {/* Project Stats */}
+                                            <div className="text-right mr-4">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {project.txCount ? `${project.txCount} Txs` : '0 Txs'}
+                                                </div>
+                                                <div className={`text-xs px-2 py-0.5 rounded-full inline-block mt-1 ${project.status === 'Active'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                    {project.status || 'Pending'}
+                                                </div>
+                                            </div>
+
                                             <Button
                                                 onClick={() => handleRemoveProject(index)}
                                                 variant="ghost"

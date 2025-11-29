@@ -13,12 +13,16 @@ const NETWORKS = {
     mainnet: {
         name: 'Flare Mainnet',
         rpc: 'https://flare-api.flare.network/ext/C/rpc',
+        explorerApi: 'https://flare-explorer.flare.network/api',
+        explorerApiV2: 'https://flare-explorer.flare.network/api/v2',
         chainId: 14,
         currency: 'FLR'
     },
     testnet: {
         name: 'Coston2 Testnet',
         rpc: 'https://coston2-api.flare.network/ext/C/rpc',
+        explorerApi: 'https://coston2-explorer.flare.network/api',
+        explorerApiV2: 'https://coston2-explorer.flare.network/api/v2',
         chainId: 114,
         currency: 'C2FLR'
     }
@@ -46,15 +50,58 @@ export async function getWalletBalance(address, network = 'mainnet') {
 }
 
 /**
- * Get transaction count for wallet
+ * Get transaction count (Nonce) from RPC
  */
-export async function getTransactionCount(address, network = 'mainnet') {
+export async function getNonce(address, network = 'mainnet') {
     try {
         const provider = getProvider(network)
         return await provider.getTransactionCount(address)
     } catch (error) {
-        console.error('Failed to fetch transaction count:', error)
+        console.error('Failed to fetch nonce:', error)
         return 0
+    }
+}
+
+/**
+ * Get total transaction count from Explorer API V2
+ * Uses the counters endpoint for accurate total counts
+ */
+export async function getTransactionCount(address, network = 'mainnet') {
+    try {
+        const config = NETWORKS[network]
+        
+        // Try V2 API first (Counters)
+        if (config.explorerApiV2) {
+            try {
+                const response = await fetch(`${config.explorerApiV2}/addresses/${address}/counters`)
+                if (response.ok) {
+                    const data = await response.json()
+                    // Return total transactions count + token transfers count for full activity
+                    const txCount = parseInt(data.transactions_count || '0')
+                    const tokenTxCount = parseInt(data.token_transfers_count || '0')
+                    return txCount + tokenTxCount
+                }
+            } catch (e) {
+                console.warn('V2 API failed, falling back to V1', e)
+            }
+        }
+
+        // Fallback to V1 API (Legacy)
+        if (config.explorerApi) {
+            const response = await fetch(`${config.explorerApi}?module=account&action=txlist&address=${address}&page=1&offset=1`)
+            const data = await response.json()
+            if (data.status === '1' && Array.isArray(data.result)) {
+                // V1 doesn't give total count easily without pagination hacks
+                // Just return nonce as last resort
+                return await getNonce(address, network)
+            }
+        }
+        
+        // Fallback to nonce if API fails
+        return await getNonce(address, network)
+    } catch (error) {
+        console.error('Failed to fetch total tx count:', error)
+        return await getNonce(address, network)
     }
 }
 

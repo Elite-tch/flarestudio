@@ -193,9 +193,7 @@ export default function Header() {
            
           </div>
 <div>
-            <Link href="/analytics-dashboard"
-             whileTap={{ scale: 0.95 }}
-            >
+            <Link href="/analytics-dashboard" >
                
                 Analytics Dashboard
                 
@@ -327,7 +325,7 @@ export default function Header() {
           </div>
         <div>
             <Link href="/analytics-dashboard"
-             whileTap={{ scale: 0.95 }}
+           
             >
                
                 Analytics Dashboard
