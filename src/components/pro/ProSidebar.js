@@ -5,7 +5,7 @@ import Link from "next/link"
 import {
     BarChart3,
     Database,
-    Activity,
+    
     Code,
     Wallet,
     TrendingUp,
@@ -39,13 +39,7 @@ export function ProSidebar({ activeFeature, onFeatureChange }) {
             tier: "pro",
             description: "Attestation monitoring & insights",
         },
-        {
-            id: "network-analytics",
-            name: "Network Analytics",
-            icon: Activity,
-            tier: "free",
-            description: "Network health & monitoring",
-        },
+       
         {
             id: "developer-tools",
             name: "Developer Tools",
