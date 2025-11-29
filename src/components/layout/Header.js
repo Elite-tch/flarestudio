@@ -192,6 +192,17 @@ export default function Header() {
             </div>
            
           </div>
+<div>
+            <Link href="/analytics-dashboard"
+             whileTap={{ scale: 0.95 }}
+            >
+               
+                Analytics Dashboard
+                
+            </Link>
+        </div>
+
+
           <div>
             <Tooltip>
                 <TooltipTrigger asChild>
@@ -210,6 +221,7 @@ export default function Header() {
 
             <GeneratorModal open={isOpen} onOpenChange={setIsOpen} />
         </div>
+        
          
         </nav>
        <div className="hidden md:block">
@@ -313,7 +325,15 @@ export default function Header() {
               </div>
             </div>
           </div>
-
+        <div>
+            <Link href="/analytics-dashboard"
+             whileTap={{ scale: 0.95 }}
+            >
+               
+                Analytics Dashboard
+                
+            </Link>
+        </div>
           <div>
             <Tooltip>
                 <TooltipTrigger asChild>
