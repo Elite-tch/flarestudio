@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { AttestationMonitor } from "./AttestationMonitor"
 import { UsageInsights } from "./UsageInsights"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 import { getRecentAttestations, subscribeToAttestations } from "@/lib/pro/fdcDataService"
 
 /**
@@ -58,7 +58,7 @@ export function FDCAnalytics() {
                         Real-time attestation monitoring and usage insights
                     </p>
                 </div>
-                <TierBadge tier="pro" size="lg" />
+               
             </div>
 
             {/* Tabs for Sub-Features */}

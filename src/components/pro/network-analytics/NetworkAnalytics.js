@@ -3,7 +3,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { NetworkHealth } from "./NetworkHealth"
 import { ContractAnalytics } from "./ContractAnalytics"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 
 /**
  * NetworkAnalytics Component
@@ -20,7 +20,7 @@ export function NetworkAnalytics() {
                         Real-time network monitoring and smart contract analytics
                     </p>
                 </div>
-                <TierBadge tier="free" size="lg" />
+                  {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Tabs for Sub-Features */}

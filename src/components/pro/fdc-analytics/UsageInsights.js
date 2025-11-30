@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { LoadingSpinner } from "../shared/LoadingSpinner"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 import { ChartWrapper } from "../shared/ChartWrapper"
 import { DataTable } from "../shared/DataTable"
 import {
@@ -112,7 +112,7 @@ export function UsageInsights({ data = [], loading = false }) {
                         Network-wide trends and usage patterns
                     </p>
                 </div>
-                <TierBadge tier="pro" />
+            {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Summary Cards */}

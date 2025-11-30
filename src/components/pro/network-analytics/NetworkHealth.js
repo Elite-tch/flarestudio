@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { LoadingSpinner } from "../shared/LoadingSpinner"
 import { ErrorMessage } from "../shared/ErrorMessage"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 import { ChartWrapper } from "../shared/ChartWrapper"
 import { getNetworkStatus, generateMockGasTrends } from "@/lib/pro/networkAnalyticsDb"
 import { Activity, Zap, Clock, CheckCircle } from "lucide-react"
@@ -59,7 +59,7 @@ export function NetworkHealth() {
                     <h3 className="text-xl font-semibold text-gray-900">Network Health</h3>
                     <p className="text-sm text-gray-600 mt-1">Real-time Flare network monitoring</p>
                 </div>
-                <TierBadge tier="free" />
+                 {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Status Cards */}

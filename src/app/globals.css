@@ -126,3 +126,15 @@ button[data-testid="connect-button"],
 button[data-testid="connected-button"] {
   padding: 0.5rem 0.5rem !important;
 }
+
+
+/* Hide scrollbar for Chrome, Safari */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for Firefox */
+.scrollbar-none, .overflow-y-auto, .overflow-x-auto {
+  scrollbar-width: none;
+}
+

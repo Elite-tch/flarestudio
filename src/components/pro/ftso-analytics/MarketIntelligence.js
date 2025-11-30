@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 import { DataTable } from "../shared/DataTable"
 import { TrendingUp, TrendingDown, Activity, AlertTriangle } from "lucide-react"
 import { getAllCurrentPrices, MAIN_FTSO_SYMBOLS } from "@/lib/pro/ftsoBlockchainService"
@@ -220,7 +220,7 @@ export function MarketIntelligence() {
                         Real-time analytics and arbitrage opportunities
                     </p>
                 </div>
-                <TierBadge tier="pro" />
+                 {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Volatility Analysis */}
@@ -261,21 +261,7 @@ export function MarketIntelligence() {
                 )}
             </div>
 
-            {/* Technical Indicators (Enterprise Feature) */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h4 className="text-lg font-semibold text-gray-900">Advanced Technical Indicators</h4>
-                        <p className="text-sm text-gray-600 mt-1">
-                            Bollinger Bands, Ichimoku Cloud, and more
-                        </p>
-                    </div>
-                    <TierBadge tier="enterprise" />
-                </div>
-                <p className="text-sm text-gray-600">
-                    Access advanced technical analysis tools and custom indicator configurations. Available in Enterprise tier.
-                </p>
-            </div>
+            
         </div>
     )
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { LoadingSpinner } from "../shared/LoadingSpinner"
 import { ErrorMessage } from "../shared/ErrorMessage"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 import { DataTable } from "../shared/DataTable"
 import { ChartWrapper } from "../shared/ChartWrapper"
 import {
@@ -113,7 +113,7 @@ export function AttestationMonitor({ data = [], loading = false, error = null })
                         Real-time tracking of FDC attestation requests
                     </p>
                 </div>
-                <TierBadge tier="pro" />
+                {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Stats Cards */}

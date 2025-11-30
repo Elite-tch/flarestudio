@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { HistoricalCharts } from "./HistoricalCharts"
 import { PerformanceMetrics } from "./PerformanceMetrics"
 import { MarketIntelligence } from "./MarketIntelligence"
-import { TierBadge } from "../shared/TierBadge"
+// { TierBadge } from "../shared/TierBadge"
 
 /**
  * FTSOAnalytics Component
@@ -22,7 +22,7 @@ export function FTSOAnalytics() {
                         Advanced price feed analytics, performance monitoring, and market intelligence
                     </p>
                 </div>
-                <TierBadge tier="pro" size="lg" />
+                 {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Tabs for Sub-Features */}

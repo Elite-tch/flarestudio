@@ -8,7 +8,7 @@ import { FDCAnalytics } from "@/components/pro/fdc-analytics/FDCAnalytics"
 import { DeveloperTools } from "@/components/pro/developer-tools/DeveloperTools"
 import { PortfolioTracking } from "@/components/pro/portfolio/PortfolioTracking"
 //import { ResearchTools } from "@/components/pro/research/ResearchTools"
-import { PremiumSupport } from "@/components/pro/support/PremiumSupport"
+//import { PremiumSupport } from "@/components/pro/support/PremiumSupport"
 
 /**
  * Pro Page
@@ -32,8 +32,6 @@ export default function ProPage() {
             case "portfolio":
                 return <PortfolioTracking />
            
-            case "support":
-                return <PremiumSupport />
             default:
                 return <FTSOAnalytics />
         }

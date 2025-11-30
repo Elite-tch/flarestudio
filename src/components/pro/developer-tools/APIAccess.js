@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Copy, Check, Globe, Code2 } from "lucide-react"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 
 /**
  * APIAccess Component
@@ -95,24 +95,24 @@ export function APIAccess() {
                         Official RPC endpoints and smart contract addresses
                     </p>
                 </div>
-                <TierBadge tier="free" />
+                 {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Network Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <div className="text-sm text-gray-600 mb-1">Flare Mainnet</div>
-                    <div className="text-2xl font-bold text-[#e93b6c]">Chain ID: 14</div>
+                    <div className="text-xl font-bold text-[#e93b6c]">Chain ID: 14</div>
                     <div className="text-xs text-gray-500 mt-1">Production Network</div>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <div className="text-sm text-gray-600 mb-1">Coston2 Testnet</div>
-                    <div className="text-2xl font-bold text-[#e93b6c]">Chain ID: 114</div>
+                    <div className="text-xl font-bold text-[#e93b6c]">Chain ID: 114</div>
                     <div className="text-xs text-gray-500 mt-1">Test Network</div>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <div className="text-sm text-gray-600 mb-1">Songbird Canary</div>
-                    <div className="text-2xl font-bold text-[#e93b6c]">Chain ID: 19</div>
+                    <div className="text-xl font-bold text-[#e93b6c]">Chain ID: 19</div>
                     <div className="text-xs text-gray-500 mt-1">Canary Network</div>
                 </div>
             </div>

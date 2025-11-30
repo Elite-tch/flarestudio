@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { LoadingSpinner } from "../shared/LoadingSpinner"
 import { ErrorMessage } from "../shared/ErrorMessage"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 import { DataTable } from "../shared/DataTable"
 import { formatLargeNumber, getContractAnalytics } from "@/lib/pro/networkAnalyticsDb"
 import { FileCode, Users, Zap } from "lucide-react"
@@ -116,7 +116,7 @@ export function ContractAnalytics() {
                     <h3 className="text-xl font-semibold text-gray-900">Smart Contract Analytics</h3>
                     <p className="text-sm text-gray-600 mt-1">Most active contracts on Flare</p>
                 </div>
-                <TierBadge tier="pro" />
+                 {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Summary Cards */}

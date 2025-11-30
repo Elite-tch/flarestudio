@@ -1,7 +1,7 @@
 "use client"
 
 import { APIAccess } from "./APIAccess"
-import { TierBadge } from "../shared/TierBadge"
+//import { TierBadge } from "../shared/TierBadge"
 
 /**
  * DeveloperTools Component
@@ -18,7 +18,7 @@ export function DeveloperTools() {
                         Flare Network RPC endpoints and developer resources
                     </p>
                 </div>
-                <TierBadge tier="free" size="lg" />
+                 {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Endpoints Content */}
