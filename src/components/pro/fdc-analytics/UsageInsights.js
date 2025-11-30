@@ -193,7 +193,7 @@ export function UsageInsights({ data = [], loading = false }) {
                             Identify peak usage times and optimize your attestation requests
                         </p>
                     </div>
-                    <TierBadge tier="enterprise" />
+                     {/*     <TierBadge tier="pro" /> */}
                 </div>
                 <p className="text-sm text-gray-600">
                     Advanced usage pattern analysis with hourly, daily, and weekly breakdowns. Available in Enterprise tier.
