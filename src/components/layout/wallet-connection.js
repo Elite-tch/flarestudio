@@ -113,9 +113,8 @@ export function WalletConnection() {
       )}
 
       <ConnectButton
-     
         client={client}
-        wallets={wallets} // ADD THIS LINE - CRITICAL FOR MOBILE
+        wallets={wallets}
         appMetadata={{
           name: "FlareStudio",
           description: "Interactive Flare Blockchain Playground",
@@ -125,10 +124,6 @@ export function WalletConnection() {
         chains={[flare, flareTestnet]}
         walletConnect={{
           projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-client-id",
-          redirect: {
-            native: "metamask://",
-            universal: "https://metamask.app.link",
-          },
           metadata: {
             name: "FlareStudio",
             description: "Interactive Flare Blockchain Playground",
