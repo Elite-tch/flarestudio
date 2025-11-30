@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
-import { ThirdwebProvider } from "thirdweb/react"
+import '@rainbow-me/rainbowkit/styles.css';
+import { Providers } from './providers'
 import { Toaster } from "react-hot-toast"
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -61,14 +62,14 @@ export default function RootLayout({ children }) {
         <title>FlareStudio - Flare Network Developer Toolkit & Playground</title>
       </head>
       <body className="font-sans bg-background text-foreground">
-        <ThirdwebProvider>
+        <Providers>
           <Header />
           {children}
-         {/*  <GeneratorButton />*/}
+          {/*  <GeneratorButton />*/}
           <Analytics />
           <SpeedInsights />
           <Toaster position="top-right" />
-        </ThirdwebProvider>
+        </Providers>
       </body>
     </html>
   )

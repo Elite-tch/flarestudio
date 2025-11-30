@@ -27,6 +27,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@rainbow-me/rainbowkit": "^2.2.9",
     "@stackblitz/sdk": "^1.11.0",
     "@supabase/supabase-js": "^2.86.0",
     "@vercel/analytics": "^1.5.0",
@@ -54,7 +55,9 @@
     "refractor": "^5.0.0",
     "solc": "^0.8.30",
     "tailwind-merge": "^3.3.1",
-    "thirdweb": "^5.108.15"
+    "thirdweb": "^5.108.15",
+    "viem": "^2.40.3",
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
