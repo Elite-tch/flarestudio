@@ -233,12 +233,12 @@ export default function Header() {
         </button>
       </div>
 
-      <div className={`md:hidden bg-[#fff1f3]  border-t transition-all duration-300 overflow-hidden ${mobileOpen ? "h-[350px] opacity-100 py-4" : "max-h-0 opacity-0 py-0"
+      <div className={`md:hidden bg-[#fff1f3]  border-t px-4  flex flex-col gap-4 transition-all duration-300 overflow-hidden ${mobileOpen ? "h-[350px] opacity-100 py-4" : "max-h-0 opacity-0 py-0"
         }`}>
 
-        <div className="px-6 flex flex-col gap-1">
+        <div className=" flex flex-col gap-1">
           <button
-            className="flex w-full justify-between items-center py-3 font-medium text-gray-700 hover:bg-[#ffe4e8] rounded-lg px-2 transition-colors duration-200"
+            className="flex w-full justify-between items-center py-2 px-4 font-medium text-gray-700 hover:bg-[#ffe4e8] rounded-lg  transition-colors duration-200"
             onClick={() => setDevelopersGuideOpen(!developersGuideOpen)}
           >
             Developers Guide
@@ -323,16 +323,16 @@ export default function Header() {
               </div>
             </div>
           </div>
-        <div>
+        <div className="mb-5">
             <Link href="/analytics-dashboard"
-           
+           className="py-2 px-4"
             >
                
                 Analytics Dashboard
                 
             </Link>
         </div>
-          <div>
+          <div className="py-2 px-4">
             <Tooltip>
                 <TooltipTrigger asChild>
                     <motion.button
