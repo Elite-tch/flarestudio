@@ -24,8 +24,8 @@ export function FDCAnalytics() {
             try {
                 setLoading(true)
 
-                // 1. Fetch History (Last ~20 blocks, ~40 seconds)
-                const history = await getRecentAttestations(20)
+                // 1. Fetch History (Last 2 hours - ~3,600 blocks at 2s/block)
+                const history = await getRecentAttestations(3600)
                 setAttestations(history)
                 setLoading(false)
 

@@ -54,13 +54,7 @@ export function ProSidebar({ activeFeature, onFeatureChange }) {
             tier: "pro",
             description: "Multi-wallet dashboard",
         },
-        {
-            id: "research",
-            name: "Research Tools",
-            icon: TrendingUp,
-            tier: "enterprise",
-            description: "Backtesting & market research",
-        },
+       
         {
             id: "support",
             name: "Premium Support",

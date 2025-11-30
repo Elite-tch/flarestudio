@@ -7,7 +7,7 @@ import { FDCAnalytics } from "@/components/pro/fdc-analytics/FDCAnalytics"
 //import { NetworkAnalytics } from "@/components/pro/network-analytics/NetworkAnalytics"
 import { DeveloperTools } from "@/components/pro/developer-tools/DeveloperTools"
 import { PortfolioTracking } from "@/components/pro/portfolio/PortfolioTracking"
-import { ResearchTools } from "@/components/pro/research/ResearchTools"
+//import { ResearchTools } from "@/components/pro/research/ResearchTools"
 import { PremiumSupport } from "@/components/pro/support/PremiumSupport"
 
 /**
@@ -25,13 +25,13 @@ export default function ProPage() {
             case "fdc-analytics":
                 return <FDCAnalytics />
            { /*  case "network-analytics":
-                return <NetworkAnalytics /> */}
+                return <NetworkAnalytics />   case "research":
+                return <ResearchTools />*/}
             case "developer-tools":
                 return <DeveloperTools />
             case "portfolio":
                 return <PortfolioTracking />
-            case "research":
-                return <ResearchTools />
+           
             case "support":
                 return <PremiumSupport />
             default:

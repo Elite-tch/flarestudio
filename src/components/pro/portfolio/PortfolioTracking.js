@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react"
 import { TierBadge } from "../shared/TierBadge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Wallet, TrendingUp, Activity, Plus, Trash2, Network } from "lucide-react"
+import { Wallet, TrendingUp, Activity, Plus, Trash2, Network, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "../shared/LoadingSpinner"
+import { SubscriptionModal } from "./SubscriptionModal"
+import { ethers } from "ethers"
+import { toast } from "react-hot-toast"
 import {
     getWalletBalance,
     getTransactionCount,
@@ -13,17 +16,27 @@ import {
     isValidAddress,
     getNetworkConfig
 } from "@/lib/pro/portfolioService"
+import {
+    getUserProfile,
+    getPortfolio,
+    addToPortfolio,
+    removeFromPortfolio,
+    SUBSCRIPTION_PLANS
+} from "@/lib/pro/subscriptionService"
 
 /**
  * PortfolioTracking Component
- * Multi-wallet dashboard with real blockchain data and local persistence
+ * Multi-wallet dashboard with real blockchain data and subscription-based limits
  */
 export function PortfolioTracking() {
-    const [network, setNetwork] = useState('mainnet') // 'mainnet' or 'testnet'
+    const [network, setNetwork] = useState('mainnet')
+    const [connectedAddress, setConnectedAddress] = useState(null)
+    const [userProfile, setUserProfile] = useState(null)
     const [wallets, setWallets] = useState([])
     const [projects, setProjects] = useState([])
     const [loading, setLoading] = useState(false)
     const [flrPrice, setFlrPrice] = useState(0)
+    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
     // Form states
     const [newWalletAddress, setNewWalletAddress] = useState('')
@@ -36,36 +49,30 @@ export function PortfolioTracking() {
 
     const networkConfig = getNetworkConfig(network)
 
-    // Load initial state from localStorage
+    // Check if wallet is connected
     useEffect(() => {
-        const savedWallets = localStorage.getItem('flare_portfolio_wallets')
-        const savedProjects = localStorage.getItem('flare_portfolio_projects')
-
-        if (savedWallets) {
-            try {
-                setWallets(JSON.parse(savedWallets))
-            } catch (e) {
-                console.error("Failed to parse saved wallets", e)
+        const checkConnection = async () => {
+            if (window.ethereum) {
+                const provider = new ethers.BrowserProvider(window.ethereum)
+                try {
+                    const accounts = await provider.listAccounts()
+                    if (accounts.length > 0) {
+                        setConnectedAddress(accounts[0].address)
+                    }
+                } catch (e) {
+                    console.error("Error checking wallet connection", e)
+                }
             }
         }
-
-        if (savedProjects) {
-            try {
-                setProjects(JSON.parse(savedProjects))
-            } catch (e) {
-                console.error("Failed to parse saved projects", e)
-            }
-        }
+        checkConnection()
     }, [])
 
-    // Save to localStorage whenever state changes
+    // Fetch User Profile & Portfolio
     useEffect(() => {
-        localStorage.setItem('flare_portfolio_wallets', JSON.stringify(wallets))
-    }, [wallets])
-
-    useEffect(() => {
-        localStorage.setItem('flare_portfolio_projects', JSON.stringify(projects))
-    }, [projects])
+        if (connectedAddress) {
+            fetchUserData()
+        }
+    }, [connectedAddress])
 
     // Fetch FLR price
     useEffect(() => {
@@ -76,155 +83,202 @@ export function PortfolioTracking() {
         fetchPrice()
     }, [network])
 
-    // Refresh wallet data when network changes
+    // Refresh data when network changes
     useEffect(() => {
-        if (wallets.length > 0) {
-            refreshWallets()
-        }
+        if (wallets.length > 0) refreshWallets()
+        if (projects.length > 0) refreshProjects()
     }, [network])
 
-    // Refresh project data when network changes
-    useEffect(() => {
-        if (projects.length > 0) {
-            refreshProjects()
-        }
-    }, [network])
-
-    const refreshWallets = async () => {
+    const fetchUserData = async () => {
         setLoading(true)
         try {
-            const updatedWallets = await Promise.all(
-                wallets.map(async (wallet) => {
-                    const balance = await getWalletBalance(wallet.address, network)
-                    const txCount = await getTransactionCount(wallet.address, network)
-                    const value = (parseFloat(balance) * flrPrice).toFixed(2)
+            const profile = await getUserProfile(connectedAddress)
+            setUserProfile(profile)
 
-                    return {
-                        ...wallet,
-                        balance: `${parseFloat(balance).toFixed(4)} ${networkConfig.currency}`,
-                        value: `$${value}`,
-                        txCount
-                    }
-                })
-            )
-            setWallets(updatedWallets)
+            const portfolio = await getPortfolio(connectedAddress)
+
+            // Separate wallets and projects
+            const rawWallets = portfolio.filter(item => item.type === 'wallet')
+            const rawProjects = portfolio.filter(item => item.type === 'project')
+
+            // Enrich with blockchain data
+            await enrichWallets(rawWallets)
+            await enrichProjects(rawProjects)
+
         } catch (error) {
-            console.error("Error refreshing wallets:", error)
+            console.error("Error fetching user data:", error)
         } finally {
             setLoading(false)
         }
     }
 
-    const refreshProjects = async () => {
-        setLoading(true)
-        try {
-            const updatedProjects = await Promise.all(
-                projects.map(async (project) => {
-                    if (project.address && isValidAddress(project.address)) {
-                        const txCount = await getTransactionCount(project.address, network)
-                        return { ...project, txCount, status: 'Active' }
-                    }
-                    return project
-                })
-            )
-            setProjects(updatedProjects)
-        } catch (error) {
-            console.error("Error refreshing projects:", error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const handleAddWallet = async () => {
-        if (!isValidAddress(newWalletAddress)) {
-            alert('Invalid wallet address')
-            return
-        }
-
-        if (wallets.length >= 5) {
-            alert('Pro tier allows up to 5 wallets. Upgrade to Enterprise for unlimited.')
-            return
-        }
-
-        // Check for duplicates
-        if (wallets.some(w => w.address.toLowerCase() === newWalletAddress.toLowerCase())) {
-            alert('Wallet already added')
-            return
-        }
-
-        setLoading(true)
-        try {
-            const balance = await getWalletBalance(newWalletAddress, network)
-            const txCount = await getTransactionCount(newWalletAddress, network)
+    const enrichWallets = async (rawWallets) => {
+        const enriched = await Promise.all(rawWallets.map(async (w) => {
+            const balance = await getWalletBalance(w.address, network)
+            const txCount = await getTransactionCount(w.address, network)
             const value = (parseFloat(balance) * flrPrice).toFixed(2)
-
-            const newWallet = {
-                address: newWalletAddress,
-                name: newWalletName || `Wallet ${wallets.length + 1}`,
+            return {
+                ...w,
                 balance: `${parseFloat(balance).toFixed(4)} ${networkConfig.currency}`,
                 value: `$${value}`,
                 txCount
             }
+        }))
+        setWallets(enriched)
+    }
 
-            setWallets([...wallets, newWallet])
+    const enrichProjects = async (rawProjects) => {
+        const enriched = await Promise.all(rawProjects.map(async (p) => {
+            let txCount = 0
+            let status = 'Pending'
+            if (p.address && isValidAddress(p.address)) {
+                txCount = await getTransactionCount(p.address, network)
+                status = 'Active'
+            }
+            return { ...p, txCount, status }
+        }))
+        setProjects(enriched)
+    }
+
+    const refreshWallets = () => enrichWallets(wallets)
+    const refreshProjects = () => enrichProjects(projects)
+
+    const handleConnectWallet = async () => {
+        if (window.ethereum) {
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum)
+                const accounts = await provider.send("eth_requestAccounts", [])
+                setConnectedAddress(accounts[0])
+            } catch (error) {
+                console.error("Error connecting wallet:", error)
+            }
+        } else {
+            toast.error("Please install Metamask to use this feature.")
+        }
+    }
+
+    const confirmDelete = (message, onConfirm) => {
+        toast((t) => (
+            <div className="flex flex-col gap-3 min-w-[250px]">
+                <p className="font-medium text-gray-900">{message}</p>
+                <div className="flex gap-2 justify-end">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => toast.dismiss(t.id)}
+                        className="h-8 px-3"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={() => {
+                            toast.dismiss(t.id)
+                            onConfirm()
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white h-8 px-3"
+                    >
+                        Delete
+                    </Button>
+                </div>
+            </div>
+        ), { duration: 5000, position: 'top-center' })
+    }
+
+    const handleAddWallet = async () => {
+        if (!isValidAddress(newWalletAddress)) {
+            toast.error('Invalid wallet address')
+            return
+        }
+
+        try {
+            setLoading(true)
+            await addToPortfolio(connectedAddress, {
+                type: 'wallet',
+                address: newWalletAddress,
+                name: newWalletName || `Wallet ${wallets.length + 1}`
+            })
+
+            await fetchUserData() // Refresh all data
             setNewWalletAddress('')
             setNewWalletName('')
             setShowAddForm(false)
+            toast.success('Wallet added successfully')
         } catch (error) {
             console.error("Error adding wallet:", error)
-            alert("Failed to fetch wallet data. Please check the address and network.")
+            if (error.message.includes("Upgrade to")) {
+                toast.error(error.message, { duration: 4000 })
+                setShowSubscriptionModal(true)
+            } else {
+                toast.error(error.message)
+            }
         } finally {
             setLoading(false)
         }
     }
 
-    const handleRemoveWallet = (index) => {
-        setWallets(wallets.filter((_, i) => i !== index))
+    const handleRemoveWallet = (id) => {
+        confirmDelete("Remove this wallet from tracking?", async () => {
+            try {
+                setLoading(true)
+                await removeFromPortfolio(id, connectedAddress)
+                await fetchUserData()
+                toast.success('Wallet removed')
+            } catch (error) {
+                console.error("Error removing wallet:", error)
+                toast.error(error.message)
+            } finally {
+                setLoading(false)
+            }
+        })
     }
 
     const handleAddProject = async () => {
         if (!newProjectName.trim()) {
-            alert('Please provide a project name')
+            toast.error('Please provide a project name')
             return
         }
 
-        // pro tier supports up to 3 projects
-        if (projects.length >= 3) {
-            alert('Pro tier allows up to 3 projects. Upgrade to Enterprise for unlimited.')
-            return
-        }
-
-        setLoading(true)
         try {
-            let txCount = 0
-            let status = 'Pending'
-
-            if (newProjectAddress && isValidAddress(newProjectAddress)) {
-                txCount = await getTransactionCount(newProjectAddress, network)
-                status = 'Active'
-            }
-
-            const project = {
-                name: newProjectName.trim(),
+            setLoading(true)
+            await addToPortfolio(connectedAddress, {
+                type: 'project',
                 address: newProjectAddress.trim() || 'N/A',
-                txCount,
-                status,
-                addedAt: new Date().toISOString()
-            }
+                name: newProjectName.trim()
+            })
 
-            setProjects([...projects, project])
+            await fetchUserData()
             setNewProjectName('')
             setNewProjectAddress('')
             setShowAddProjectForm(false)
+            toast.success('Project added successfully')
         } catch (error) {
             console.error("Error adding project:", error)
+            if (error.message.includes("Upgrade to")) {
+                toast.error(error.message, { duration: 4000 })
+                setShowSubscriptionModal(true)
+            } else {
+                toast.error(error.message)
+            }
         } finally {
             setLoading(false)
         }
     }
 
-    const handleRemoveProject = (index) => {
-        setProjects(projects.filter((_, i) => i !== index))
+    const handleRemoveProject = (id) => {
+        confirmDelete("Stop monitoring this project?", async () => {
+            try {
+                setLoading(true)
+                await removeFromPortfolio(id, connectedAddress)
+                await fetchUserData()
+                toast.success('Project removed')
+            } catch (error) {
+                console.error("Error removing project:", error)
+                toast.error(error.message)
+            } finally {
+                setLoading(false)
+            }
+        })
     }
 
     const totalBalance = wallets.reduce((sum, wallet) => {
@@ -237,19 +291,61 @@ export function PortfolioTracking() {
         return sum + (isNaN(value) ? 0 : value)
     }, 0)
 
-    const totalTxs = wallets.reduce((sum, wallet) => sum + (wallet.txCount || 0), 0)
+    const totalTxs = wallets.reduce((sum, wallet) => sum + (wallet.txCount === '100+' ? 100 : (wallet.txCount || 0)), 0)
+
+    if (!connectedAddress) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-6">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Wallet className="w-10 h-10 text-gray-400" />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Connect Wallet to Track Portfolio</h2>
+                    <p className="text-gray-600 mt-2 max-w-md mx-auto">
+                        Connect your wallet to access the dashboard. Your wallet address is your identity.
+                    </p>
+                </div>
+                <Button
+                    onClick={handleConnectWallet}
+                    className="bg-[#e93b6c] hover:bg-[#d12d5a] text-white px-8 py-6 text-lg"
+                >
+                    Connect Wallet
+                </Button>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">
+            <SubscriptionModal
+                isOpen={showSubscriptionModal}
+                onClose={() => setShowSubscriptionModal(false)}
+                currentTier={userProfile?.tier || 'free'}
+                onSuccess={() => {
+                    toast.success("Subscription successful! Welcome to " + userProfile?.tier)
+                    fetchUserData()
+                }}
+            />
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold text-gray-900">Portfolio Tracking</h2>
                     <p className="text-gray-600 mt-2">
-                        Multi-wallet dashboard with real-time blockchain data
+                        Connected: <span className="font-mono bg-gray-100 px-2 py-1 rounded text-sm">{connectedAddress}</span>
                     </p>
                 </div>
-                <TierBadge tier="pro" size="lg" />
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowSubscriptionModal(true)}
+                        className="gap-2 border-[#e93b6c] text-[#e93b6c] hover:bg-pink-50"
+                    >
+                        <Zap className="w-4 h-4" />
+                        {userProfile?.tier === 'free' ? 'Upgrade Plan' : 'Manage Plan'}
+                    </Button>
+                    <TierBadge tier={userProfile?.tier || 'free'} size="lg" />
+                </div>
             </div>
 
             {/* Network Switcher */}
@@ -290,26 +386,50 @@ export function PortfolioTracking() {
                 </TabsList>
 
                 <TabsContent value="wallets" className="mt-6 space-y-6">
-                    {/* Wallet Limits */}
+                    {/* Shared Limits Display */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className={`bg-white rounded-lg p-4 border ${userProfile?.tier === 'free' ? 'border-[#e93b6c] ring-1 ring-[#e93b6c]' : 'border-gray-200'}`}>
                             <div className="text-sm text-gray-600 mb-1">Free Tier</div>
-                            <div className="text-2xl font-bold text-gray-900">1 wallet</div>
+                            <div className="text-xl font-bold text-gray-900">1 Wallet</div>
                         </div>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className={`bg-white rounded-lg p-4 border ${userProfile?.tier === 'pro' ? 'border-[#e93b6c] ring-1 ring-[#e93b6c]' : 'border-gray-200'}`}>
                             <div className="text-sm text-gray-600 mb-1">Pro Tier</div>
-                            <div className="text-2xl font-bold text-[#e93b6c]">5 wallets</div>
+                            <div className="text-xl font-bold text-[#e93b6c]">5 Wallets</div>
                         </div>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className={`bg-white rounded-lg p-4 border ${userProfile?.tier === 'enterprise' ? 'border-[#e93b6c] ring-1 ring-[#e93b6c]' : 'border-gray-200'}`}>
                             <div className="text-sm text-gray-600 mb-1">Enterprise Tier</div>
-                            <div className="text-2xl font-bold text-[#e93b6c]">Unlimited</div>
+                            <div className="text-xl font-bold text-[#e93b6c]">Unlimited</div>
                         </div>
+                    </div>
+
+                    {/* Usage Progress */}
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center justify-between">
+                        <div>
+                            <span className="font-semibold text-gray-900">Current Usage: </span>
+                            <span className="text-[#e93b6c] font-bold">
+                                {wallets.length + projects.length} / {SUBSCRIPTION_PLANS[userProfile?.tier || 'free'].limit} Items
+                            </span>
+                            <span className="text-sm text-gray-500 ml-2">
+                                ({wallets.length} Wallets + {projects.length} Projects)
+                            </span>
+                        </div>
+                        {userProfile?.tier === 'free' && (
+                            <Button
+                                variant="link"
+                                onClick={() => setShowSubscriptionModal(true)}
+                                className="text-[#e93b6c] h-auto p-0"
+                            >
+                                Upgrade to increase limit &rarr;
+                            </Button>
+                        )}
                     </div>
 
                     {/* Tracked Wallets */}
                     <div className="bg-white rounded-lg p-6 border border-gray-200">
                         <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-lg font-semibold text-gray-900">Tracked Wallets ({wallets.length}/5)</h4>
+                            <h4 className="text-lg font-semibold text-gray-900">
+                                Tracked Wallets
+                            </h4>
                             <Button
                                 onClick={() => setShowAddForm(!showAddForm)}
                                 className="bg-[#e93b6c] hover:bg-[#d12d5a] text-white gap-2"
@@ -393,14 +513,7 @@ export function PortfolioTracking() {
                                                 <div className="font-semibold text-gray-900">{wallet.balance}</div>
                                                 <div className="text-sm text-gray-500">{wallet.value}</div>
                                             </div>
-                                            <Button
-                                                onClick={() => handleRemoveWallet(index)}
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                           
                                         </div>
                                     </div>
                                 ))}
@@ -444,24 +557,48 @@ export function PortfolioTracking() {
                 <TabsContent value="projects" className="mt-6 space-y-6">
                     {/* Project Limits */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className={`bg-white rounded-lg p-4 border ${userProfile?.tier === 'free' ? 'border-[#e93b6c] ring-1 ring-[#e93b6c]' : 'border-gray-200'}`}>
                             <div className="text-sm text-gray-600 mb-1">Free Tier</div>
-                            <div className="text-2xl font-bold text-gray-900">0 projects</div>
+                            <div className="text-xl font-bold text-gray-900">1 Project</div>
                         </div>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className={`bg-white rounded-lg p-4 border ${userProfile?.tier === 'pro' ? 'border-[#e93b6c] ring-1 ring-[#e93b6c]' : 'border-gray-200'}`}>
                             <div className="text-sm text-gray-600 mb-1">Pro Tier</div>
-                            <div className="text-2xl font-bold text-[#e93b6c]">3 projects</div>
+                            <div className="text-xl font-bold text-[#e93b6c]">5 Projects</div>
                         </div>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className={`bg-white rounded-lg p-4 border ${userProfile?.tier === 'enterprise' ? 'border-[#e93b6c] ring-1 ring-[#e93b6c]' : 'border-gray-200'}`}>
                             <div className="text-sm text-gray-600 mb-1">Enterprise Tier</div>
-                            <div className="text-2xl font-bold text-[#e93b6c]">Unlimited</div>
+                            <div className="text-xl font-bold text-[#e93b6c]">Unlimited</div>
                         </div>
                     </div>
 
                     {/* Project Monitoring */}
+                      {/* Usage Progress */}
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center justify-between">
+                        <div>
+                            <span className="font-semibold text-gray-900">Current Usage: </span>
+                            <span className="text-[#e93b6c] font-bold">
+                                {wallets.length + projects.length} / {SUBSCRIPTION_PLANS[userProfile?.tier || 'free'].limit} Items
+                            </span>
+                            <span className="text-sm text-gray-500 ml-2">
+                                ({wallets.length} Wallets + {projects.length} Projects)
+                            </span>
+                        </div>
+                        {userProfile?.tier === 'free' && (
+                            <Button
+                                variant="link"
+                                onClick={() => setShowSubscriptionModal(true)}
+                                className="text-[#e93b6c] h-auto p-0"
+                            >
+                                Upgrade to increase limit &rarr;
+                            </Button>
+                        )}
+                    </div>
+
                     <div className="bg-white rounded-lg p-6 border border-gray-200">
                         <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-lg font-semibold text-gray-900">Monitored Projects ({projects.length}/3)</h4>
+                            <h4 className="text-lg font-semibold text-gray-900">
+                                Monitored Projects
+                            </h4>
                             <Button
                                 onClick={() => setShowAddProjectForm(!showAddProjectForm)}
                                 className="bg-[#e93b6c] hover:bg-[#d12d5a] text-white gap-2"
@@ -543,21 +680,14 @@ export function PortfolioTracking() {
                                                     {project.txCount ? `${project.txCount} Txs` : '0 Txs'}
                                                 </div>
                                                 <div className={`text-xs px-2 py-0.5 rounded-full inline-block mt-1 ${project.status === 'Active'
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : 'bg-gray-100 text-gray-600'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-gray-100 text-gray-600'
                                                     }`}>
                                                     {project.status || 'Pending'}
                                                 </div>
                                             </div>
 
-                                            <Button
-                                                onClick={() => handleRemoveProject(index)}
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                            
                                         </div>
                                     </div>
                                 ))}

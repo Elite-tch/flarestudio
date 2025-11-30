@@ -151,7 +151,7 @@ export function HistoricalCharts() {
                         <button
                             onClick={() => setChartType("area")}
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${chartType === "area"
-                                ? "bg-blue-500 text-white"
+                                ? "bg-gray-900 text-white"
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                 }`}
                         >
@@ -160,7 +160,7 @@ export function HistoricalCharts() {
                         <button
                             onClick={() => setChartType("line")}
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${chartType === "line"
-                                ? "bg-blue-500 text-white"
+                                ? "bg-gray-900 text-white"
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                 }`}
                         >
@@ -183,7 +183,7 @@ export function HistoricalCharts() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <div className="text-sm text-gray-600 mb-1">Current Price</div>
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-xl font-bold text-gray-900">
                         ${currentPrices[selectedSymbol]?.toLocaleString() || "Loading..."}
                     </div>
                     <div className="text-xs text-gray-500 mt-2">
@@ -193,7 +193,7 @@ export function HistoricalCharts() {
 
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <div className="text-sm text-gray-600 mb-1">Price Change ({timeRange})</div>
-                    <div className={`text-3xl font-bold flex items-center gap-2 ${priceChange.isPositive ? "text-green-600" : "text-red-600"
+                    <div className={`text-xl font-bold flex items-center gap-2 ${priceChange.isPositive ? "text-green-600" : "text-red-600"
                         }`}>
                         {priceChange.isPositive ? (
                             <TrendingUp className="w-6 h-6" />

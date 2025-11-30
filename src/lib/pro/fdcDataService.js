@@ -33,6 +33,7 @@ export async function getFdcHub() {
 
 /**
  * Fetch recent attestation requests from the blockchain
+ * Handles RPC provider's 30-block limit by chunking requests
  */
 export async function getRecentAttestations(blocksToLookBack = 20) {
     try {
@@ -44,9 +45,25 @@ export async function getRecentAttestations(blocksToLookBack = 20) {
         const toBlock = currentBlock
 
         const filter = contract.filters.AttestationRequest()
-        const events = await contract.queryFilter(filter, fromBlock, toBlock)
 
-        return await Promise.all(events.map(async (event) => {
+        // RPC provider limits to 30 blocks per request
+        const CHUNK_SIZE = 30
+        const allEvents = []
+
+        // Fetch in chunks to respect the limit
+        for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
+            const end = Math.min(start + CHUNK_SIZE - 1, toBlock)
+
+            try {
+                const events = await contract.queryFilter(filter, start, end)
+                allEvents.push(...events)
+            } catch (chunkError) {
+                console.warn(`Failed to fetch blocks ${start}-${end}:`, chunkError)
+                // Continue with other chunks even if one fails
+            }
+        }
+
+        return await Promise.all(allEvents.map(async (event) => {
             const block = await event.getBlock()
             return processAttestationEvent(event, block)
         }))
