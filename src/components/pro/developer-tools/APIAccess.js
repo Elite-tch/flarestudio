@@ -95,7 +95,7 @@ export function APIAccess() {
                         Official RPC endpoints and smart contract addresses
                     </p>
                 </div>
-                 {/*     <TierBadge tier="pro" /> */}
+                {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Network Info Cards */}
@@ -127,25 +127,47 @@ export function APIAccess() {
                     {endpoints.map((endpoint) => (
                         <div
                             key={endpoint.id}
-                            className="p-5 border border-gray-200 rounded-lg hover:border-[#e93b6c] transition-colors"
+                            className="p-5 border border-gray-200 rounded-lg hover:border-[#e93b6c] transition-colors w-full"
                         >
                             <div className="flex items-start justify-between mb-3">
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex md:hidden justify-end itemes-end mb-3">
+                                        <Button
+                                            onClick={() => handleCopy(endpoint.url, endpoint.id)}
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-1.5"
+                                        >
+                                            {copiedEndpoint === endpoint.id ? (
+                                                <>
+                                                    <Check className="w-3.5 h-3.5" />
+                                                    Copied
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                    Copy
+                                                </>
+                                            )}
+                                        </Button>
+
+                                    </div>
+
                                     <div className="flex items-center gap-2 mb-2">
                                         <h5 className="font-semibold text-gray-900">{endpoint.name}</h5>
                                         <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                                             Chain ID: {endpoint.chainId}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <code className="text-sm font-mono text-[#e93b6c] bg-pink-50 px-3 py-1.5 rounded flex-1">
+                                    <div className="flex items-center gap-2 mb-3 ">
+                                        <code className="text-sm font-mono text-[#e93b6c] bg-pink-50 px-3 py-1.5 rounded flex-1 break-all">
                                             {endpoint.url}
                                         </code>
-                                        <Button
+                                   <Button
                                             onClick={() => handleCopy(endpoint.url, endpoint.id)}
                                             variant="outline"
                                             size="sm"
-                                            className="gap-1.5"
+                                            className="gap-1.5 hidden md:flex"
                                         >
                                             {copiedEndpoint === endpoint.id ? (
                                                 <>

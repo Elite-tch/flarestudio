@@ -27,7 +27,7 @@ export function FTSOAnalytics() {
 
             {/* Tabs for Sub-Features */}
             <Tabs defaultValue="historical" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200">
+                <TabsList className="grid w-full grid-cols-2 mb-10 md:mb-2 md:grid-cols-3 bg-white border border-gray-200">
                     <TabsTrigger value="historical">Historical Data</TabsTrigger>
                     <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
                     <TabsTrigger value="intelligence">Market Intelligence</TabsTrigger>

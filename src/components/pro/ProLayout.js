@@ -20,7 +20,7 @@ export function ProLayout({ children, activeFeature, onFeatureChange }) {
 
             {/* Main Content */}
             <main className="flex-1 lg:ml-0 overflow-x-hidden">
-                <div className="container mx-auto px-4 lg:px-8 py-8">
+                <div className="container mx-auto px-4 lg:px-8 pb-8 pt-14 md:py-8">
                     {children}
                 </div>
             </main>

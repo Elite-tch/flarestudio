@@ -101,7 +101,7 @@ export function SubscriptionModal({ isOpen, onClose, currentTier, onSuccess }) {
                     <div className={`border rounded-xl p-6 relative ${currentTier === 'pro' ? 'border-[#e93b6c] bg-pink-50' : 'border-gray-200 shadow-lg'}`}>
                         {currentTier !== 'pro' && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#e93b6c] text-white px-3 py-1 rounded-full text-xs font-bold">POPULAR</div>}
                         <h3 className="text-lg font-bold">Pro</h3>
-                        <div className="text-3xl font-bold mt-2">100 <span className="text-sm font-normal text-gray-500">C2FLR/mo</span></div>
+                        <div className="text-3xl font-bold mt-2">20 <span className="text-sm font-normal text-gray-500">C2FLR/mo</span></div>
                         <ul className="mt-6 space-y-3 text-sm">
                             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" /> 5 Wallets</li>
                             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" /> 5 Monitored Projects</li>
@@ -120,7 +120,7 @@ export function SubscriptionModal({ isOpen, onClose, currentTier, onSuccess }) {
                     {/* Enterprise Plan */}
                     <div className={`border rounded-xl p-6 relative ${currentTier === 'enterprise' ? 'border-[#e93b6c] bg-pink-50' : 'border-gray-200'}`}>
                         <h3 className="text-lg font-bold">Enterprise</h3>
-                        <div className="text-3xl font-bold mt-2">500 <span className="text-sm font-normal text-gray-500">C2FLR/mo</span></div>
+                        <div className="text-3xl font-bold mt-2">50 <span className="text-sm font-normal text-gray-500">C2FLR/mo</span></div>
                         <ul className="mt-6 space-y-3 text-sm">
                             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" /> Unlimited Wallets</li>
                             <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" /> Unlimited Projects</li>

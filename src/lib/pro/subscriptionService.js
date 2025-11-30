@@ -22,13 +22,13 @@ export const SUBSCRIPTION_PLANS = {
     pro: {
         id: 'pro',
         name: 'Pro',
-        price: 100, // 100 C2FLR
+        price: 20, // 20 C2FLR
         limit: 5 // Total items
     },
     enterprise: {
         id: 'enterprise',
         name: 'Enterprise',
-        price: 500, // 500 C2FLR
+        price: 50, // 50 C2FLR
         limit: 999 // Unlimited
     }
 }

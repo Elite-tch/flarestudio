@@ -51,7 +51,7 @@ export function ProSidebar({ activeFeature, onFeatureChange }) {
         if (saved) {
             onFeatureChange(saved)
         }
-    }, [])
+    }, [onFeatureChange])
 
     const handleFeatureClick = (featureId) => {
         localStorage.setItem("activeFeature", featureId)
@@ -63,9 +63,9 @@ export function ProSidebar({ activeFeature, onFeatureChange }) {
         <>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="lg:hidden fixed top-20 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
+                className="lg:hidden fixed top-20 left-4 z-20 p-2 bg-pink-50 rounded-lg shadow-lg border border-gray-200"
             >
-                {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+               <div className="flex items-center gap-2 "><Menu className="w-5 h-5" /> Side Bar </div> 
             </button>
 
             {isOpen && (
@@ -77,7 +77,7 @@ export function ProSidebar({ activeFeature, onFeatureChange }) {
 
             <aside
                 className={`
-                    fixed lg:sticky top-0 left-0 h-screen bg-white border-r border-gray-200 z-40
+                    fixed lg:sticky top-7 md:top-0 left-0 md:pt-2 pt-12 h-screen bg-white border-r border-gray-200 z-40
                     transition-transform duration-300 ease-in-out
                     ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
                     w-72 overflow-y-auto scrollbar-none
@@ -108,10 +108,9 @@ export function ProSidebar({ activeFeature, onFeatureChange }) {
                                         onClick={() => handleFeatureClick(feature.id)}
                                         className={`
                                             w-full flex items-start gap-3 p-3 rounded-lg transition-all
-                                            ${
-                                                isActive
-                                                    ? "bg-[#ffe4e8] text-[#e93b6c] shadow-sm"
-                                                    : "hover:bg-gray-50 text-gray-700"
+                                            ${isActive
+                                                ? "bg-[#ffe4e8] text-[#e93b6c] shadow-sm"
+                                                : "hover:bg-gray-50 text-gray-700"
                                             }
                                         `}
                                     >

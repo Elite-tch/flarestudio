@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { TrendingUp, TrendingDown, Calendar, RefreshCw } from "lucide-react"
 import { getAllCurrentPrices, MAIN_FTSO_SYMBOLS } from "@/lib/pro/ftsoBlockchainService"
@@ -18,19 +18,7 @@ export function HistoricalCharts() {
     const [loading, setLoading] = useState(true)
     const [lastUpdate, setLastUpdate] = useState(null)
 
-    // Fetch current prices
-    useEffect(() => {
-        fetchCurrentPrices()
-        const interval = setInterval(fetchCurrentPrices, 4000) // Update every second
-        return () => clearInterval(interval)
-    }, [selectedSymbol])
-
-    // Clear history when symbol changes
-    useEffect(() => {
-        setHistoricalData([])
-    }, [selectedSymbol])
-
-    const fetchCurrentPrices = async () => {
+    const fetchCurrentPrices = useCallback(async () => {
         try {
             console.log("🔄 Fetching FTSO prices from blockchain...")
             const prices = await getAllCurrentPrices()
@@ -71,7 +59,19 @@ export function HistoricalCharts() {
             console.error("❌ Error fetching current prices:", error)
             setLoading(false)
         }
-    }
+    }, [selectedSymbol])
+
+    // Fetch current prices
+    useEffect(() => {
+        fetchCurrentPrices()
+        const interval = setInterval(fetchCurrentPrices, 4000) // Update every second
+        return () => clearInterval(interval)
+    }, [fetchCurrentPrices])
+
+    // Clear history when symbol changes
+    useEffect(() => {
+        setHistoricalData([])
+    }, [selectedSymbol])
 
     const getPriceChange = () => {
         if (historicalData.length < 2) return { value: 0, percentage: 0, isPositive: true }

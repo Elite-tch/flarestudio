@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 //import { TierBadge } from "../shared/TierBadge"
 import { DataTable } from "../shared/DataTable"
 import { TrendingUp, TrendingDown, Activity, AlertTriangle } from "lucide-react"
@@ -24,32 +24,7 @@ export function MarketIntelligence() {
         setPriceHistory(initialHistory)
     }, [])
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // 1. Fetch FTSO Prices
-                const ftsoPrices = await getAllCurrentPrices()
-
-                // 2. Update Price History & Calculate Volatility
-                updateVolatility(ftsoPrices)
-
-                // 3. Fetch CEX Prices & Calculate Arbitrage
-                const symbols = ftsoPrices.map(p => p.symbol)
-                const cexPrices = await getCexPrices(symbols)
-                calculateArbitrage(ftsoPrices, cexPrices)
-
-                setLoading(false)
-            } catch (error) {
-                console.error("Error fetching market intelligence data:", error)
-            }
-        }
-
-        fetchData()
-        const interval = setInterval(fetchData, 5000)
-        return () => clearInterval(interval)
-    }, [])
-
-    const updateVolatility = (currentPrices) => {
+    const updateVolatility = useCallback((currentPrices) => {
         setPriceHistory(prev => {
             const newHistory = { ...prev }
             const newVolatilityData = []
@@ -92,7 +67,7 @@ export function MarketIntelligence() {
             setVolatilityData(newVolatilityData)
             return newHistory
         })
-    }
+    }, [])
 
     const calculateRSI = (prices) => {
         // Simple RSI approximation
@@ -108,7 +83,7 @@ export function MarketIntelligence() {
         return Math.floor(100 - (100 / (1 + rs)))
     }
 
-    const calculateArbitrage = (ftsoPrices, cexPrices) => {
+    const calculateArbitrage = useCallback((ftsoPrices, cexPrices) => {
         const opportunities = []
 
         ftsoPrices.forEach(ftso => {
@@ -131,7 +106,32 @@ export function MarketIntelligence() {
         opportunities.sort((a, b) => Math.abs(b.percentage) - Math.abs(a.percentage))
 
         setArbitrageOpportunities(opportunities)
-    }
+    }, [])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // 1. Fetch FTSO Prices
+                const ftsoPrices = await getAllCurrentPrices()
+
+                // 2. Update Price History & Calculate Volatility
+                updateVolatility(ftsoPrices)
+
+                // 3. Fetch CEX Prices & Calculate Arbitrage
+                const symbols = ftsoPrices.map(p => p.symbol)
+                const cexPrices = await getCexPrices(symbols)
+                calculateArbitrage(ftsoPrices, cexPrices)
+
+                setLoading(false)
+            } catch (error) {
+                console.error("Error fetching market intelligence data:", error)
+            }
+        }
+
+        fetchData()
+        const interval = setInterval(fetchData, 5000)
+        return () => clearInterval(interval)
+    }, [updateVolatility, calculateArbitrage])
 
     const volatilityColumns = [
         {
@@ -220,7 +220,7 @@ export function MarketIntelligence() {
                         Real-time analytics and arbitrage opportunities
                     </p>
                 </div>
-                 {/*     <TierBadge tier="pro" /> */}
+                {/*     <TierBadge tier="pro" /> */}
             </div>
 
             {/* Volatility Analysis */}
@@ -261,7 +261,7 @@ export function MarketIntelligence() {
                 )}
             </div>
 
-            
+
         </div>
     )
 }
