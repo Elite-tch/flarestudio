@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { TierBadge } from "../shared/TierBadge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Wallet, TrendingUp, Activity, Plus, Trash2, Network, Zap } from "lucide-react"
@@ -67,29 +67,42 @@ export function PortfolioTracking() {
         checkConnection()
     }, [])
 
-    // Fetch User Profile & Portfolio
-    useEffect(() => {
-        if (connectedAddress) {
-            fetchUserData()
-        }
-    }, [connectedAddress])
+    // Refs for accessing latest state in effects without triggering re-runs
+    const walletsRef = useRef(wallets)
+    const projectsRef = useRef(projects)
 
-    // Fetch FLR price
-    useEffect(() => {
-        const fetchPrice = async () => {
-            const price = await getFLRPrice(network)
-            setFlrPrice(price)
-        }
-        fetchPrice()
+    useEffect(() => { walletsRef.current = wallets }, [wallets])
+    useEffect(() => { projectsRef.current = projects }, [projects])
+
+    const enrichWallets = useCallback(async (rawWallets) => {
+        const enriched = await Promise.all(rawWallets.map(async (w) => {
+            const balance = await getWalletBalance(w.address, network)
+            const txCount = await getTransactionCount(w.address, network)
+            const value = (parseFloat(balance) * flrPrice).toFixed(2)
+            return {
+                ...w,
+                balance: `${parseFloat(balance).toFixed(4)} ${networkConfig.currency}`,
+                value: `$${value}`,
+                txCount
+            }
+        }))
+        setWallets(enriched)
+    }, [network, flrPrice, networkConfig.currency])
+
+    const enrichProjects = useCallback(async (rawProjects) => {
+        const enriched = await Promise.all(rawProjects.map(async (p) => {
+            let txCount = 0
+            let status = 'Pending'
+            if (p.address && isValidAddress(p.address)) {
+                txCount = await getTransactionCount(p.address, network)
+                status = 'Active'
+            }
+            return { ...p, txCount, status }
+        }))
+        setProjects(enriched)
     }, [network])
 
-    // Refresh data when network changes
-    useEffect(() => {
-        if (wallets.length > 0) refreshWallets()
-        if (projects.length > 0) refreshProjects()
-    }, [network])
-
-    const fetchUserData = async () => {
+    const fetchUserData = useCallback(async () => {
         setLoading(true)
         try {
             const profile = await getUserProfile(connectedAddress)
@@ -110,38 +123,29 @@ export function PortfolioTracking() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [connectedAddress, enrichWallets, enrichProjects])
 
-    const enrichWallets = async (rawWallets) => {
-        const enriched = await Promise.all(rawWallets.map(async (w) => {
-            const balance = await getWalletBalance(w.address, network)
-            const txCount = await getTransactionCount(w.address, network)
-            const value = (parseFloat(balance) * flrPrice).toFixed(2)
-            return {
-                ...w,
-                balance: `${parseFloat(balance).toFixed(4)} ${networkConfig.currency}`,
-                value: `$${value}`,
-                txCount
-            }
-        }))
-        setWallets(enriched)
-    }
+    // Fetch User Profile & Portfolio
+    useEffect(() => {
+        if (connectedAddress) {
+            fetchUserData()
+        }
+    }, [connectedAddress, fetchUserData])
 
-    const enrichProjects = async (rawProjects) => {
-        const enriched = await Promise.all(rawProjects.map(async (p) => {
-            let txCount = 0
-            let status = 'Pending'
-            if (p.address && isValidAddress(p.address)) {
-                txCount = await getTransactionCount(p.address, network)
-                status = 'Active'
-            }
-            return { ...p, txCount, status }
-        }))
-        setProjects(enriched)
-    }
+    // Fetch FLR price
+    useEffect(() => {
+        const fetchPrice = async () => {
+            const price = await getFLRPrice(network)
+            setFlrPrice(price)
+        }
+        fetchPrice()
+    }, [network])
 
-    const refreshWallets = () => enrichWallets(wallets)
-    const refreshProjects = () => enrichProjects(projects)
+    // Refresh data when network changes
+    useEffect(() => {
+        if (walletsRef.current.length > 0) enrichWallets(walletsRef.current)
+        if (projectsRef.current.length > 0) enrichProjects(projectsRef.current)
+    }, [network, enrichWallets, enrichProjects])
 
     const handleConnectWallet = async () => {
         if (window.ethereum) {
@@ -513,7 +517,7 @@ export function PortfolioTracking() {
                                                 <div className="font-semibold text-gray-900">{wallet.balance}</div>
                                                 <div className="text-sm text-gray-500">{wallet.value}</div>
                                             </div>
-                                           
+
                                         </div>
                                     </div>
                                 ))}
@@ -572,7 +576,7 @@ export function PortfolioTracking() {
                     </div>
 
                     {/* Project Monitoring */}
-                      {/* Usage Progress */}
+                    {/* Usage Progress */}
                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center justify-between">
                         <div>
                             <span className="font-semibold text-gray-900">Current Usage: </span>
@@ -687,7 +691,7 @@ export function PortfolioTracking() {
                                                 </div>
                                             </div>
 
-                                            
+
                                         </div>
                                     </div>
                                 ))}

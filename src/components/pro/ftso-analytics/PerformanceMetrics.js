@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { TrendingUp, TrendingDown, Activity, Zap } from "lucide-react"
 import { getAllCurrentPrices, MAIN_FTSO_SYMBOLS } from "@/lib/pro/ftsoBlockchainService"
 
@@ -12,8 +12,41 @@ export function PerformanceMetrics() {
     const [metrics, setMetrics] = useState([])
     const [loading, setLoading] = useState(true)
     const [initialPrices, setInitialPrices] = useState({})
+    const initialPricesRef = useRef({})
     const [topGainer, setTopGainer] = useState(null)
     const [topLoser, setTopLoser] = useState(null)
+
+    // Update ref when state changes
+    useEffect(() => {
+        initialPricesRef.current = initialPrices
+    }, [initialPrices])
+
+    // Update metrics based on current vs initial prices
+    const updateMetrics = useCallback((currentPrices, startPrices) => {
+        if (Object.keys(startPrices).length === 0) return
+
+        const newMetrics = currentPrices.map(p => {
+            const startPrice = startPrices[p.symbol] || p.price
+            const change = p.price - startPrice
+            const changePercent = startPrice !== 0 ? (change / startPrice) * 100 : 0
+
+            return {
+                symbol: p.symbol,
+                price: p.price,
+                change,
+                changePercent
+            }
+        })
+
+        setMetrics(newMetrics)
+
+        // Find top gainer/loser
+        if (newMetrics.length > 0) {
+            const sorted = [...newMetrics].sort((a, b) => b.changePercent - a.changePercent)
+            setTopGainer(sorted[0])
+            setTopLoser(sorted[sorted.length - 1])
+        }
+    }, [])
 
     useEffect(() => {
         // Initial fetch to set baseline
@@ -39,41 +72,14 @@ export function PerformanceMetrics() {
         const interval = setInterval(async () => {
             try {
                 const prices = await getAllCurrentPrices()
-                updateMetrics(prices, initialPrices)
+                updateMetrics(prices, initialPricesRef.current)
             } catch (error) {
                 console.error("Failed to update metrics:", error)
             }
         }, 5000)
 
         return () => clearInterval(interval)
-    }, []) // Empty dependency array to run once on mount
-
-    // Update metrics based on current vs initial prices
-    const updateMetrics = (currentPrices, startPrices) => {
-        if (Object.keys(startPrices).length === 0) return
-
-        const newMetrics = currentPrices.map(p => {
-            const startPrice = startPrices[p.symbol] || p.price
-            const change = p.price - startPrice
-            const changePercent = startPrice !== 0 ? (change / startPrice) * 100 : 0
-
-            return {
-                symbol: p.symbol,
-                price: p.price,
-                change,
-                changePercent
-            }
-        })
-
-        setMetrics(newMetrics)
-
-        // Find top gainer/loser
-        if (newMetrics.length > 0) {
-            const sorted = [...newMetrics].sort((a, b) => b.changePercent - a.changePercent)
-            setTopGainer(sorted[0])
-            setTopLoser(sorted[sorted.length - 1])
-        }
-    }
+    }, [updateMetrics])
 
     if (loading) {
         return (
