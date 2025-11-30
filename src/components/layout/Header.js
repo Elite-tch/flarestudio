@@ -323,7 +323,7 @@ export default function Header() {
               </div>
             </div>
           </div>
-        <div className="mb-5">
+        <div className="mb-3">
             <Link href="/analytics-dashboard"
            className="py-2 px-4"
             >
@@ -351,7 +351,7 @@ export default function Header() {
             <GeneratorModal open={isOpen} onOpenChange={setIsOpen} />
         </div>
 
-        <div className="mt-12">
+        <div className="mt-4 px-4">
       <WalletConnection />
       </div>
         </div> 
