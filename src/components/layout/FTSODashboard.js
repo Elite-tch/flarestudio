@@ -117,62 +117,31 @@ export default function FTSODashboard() {
     setRefreshing(true)
 
     try {
-      const signer = await getSigner();
-      if (!signer) {
-        toast.error("Unable to get signer");
-        return;
-      }
+      // Import the working service
+      const { getAllCurrentPrices } = await import("@/lib/pro/ftsoBlockchainService");
 
-      const contracts = await loadFtsoContracts(signer);
+      // Fetch all prices using the working method
+      const prices = await getAllCurrentPrices(FTSO_SYMBOLS);
 
-      // Fetch network stats from FTSO manager
-      try {
-        const currentEpoch = await contracts.ftsoManager.getCurrentPriceEpochId();
-        const epochData = await contracts.ftsoManager.getPriceEpochData(currentEpoch);
-        setNetworkStats({
-          currentEpoch: Number(currentEpoch),
-          epochStart: Number(epochData._startTimestamp),
-          epochEnd: Number(epochData._endTimestamp),
-          activeFTSOs: FTSO_SYMBOLS.length,
-          totalProviders: Math.floor(Math.random() * 50) + 30, // Simulated provider count
-          network: activeChain?.name || 'Flare Network'
-        });
-      } catch (error) {
-        console.log("Could not fetch epoch data:", error);
-      }
+      // Process the results
+      prices.forEach(priceData => {
+        if (priceData) {
+          newPrices[priceData.symbol] = priceData.price;
+          newTimestamps[priceData.symbol] = priceData.timestamp.toISOString();
 
-      // Fetch prices for all symbols
-      for (const symbol of FTSO_SYMBOLS) {
-        try {
-          const ftsoAddress = await contracts.ftsoRegistry.getFtsoBySymbol(symbol);
-          if (ftsoAddress && ftsoAddress !== ethers.ZeroAddress) {
-            const ftso = new ethers.Contract(ftsoAddress, FTSO_DETAILED_ABI, signer);
-            const [price, timestamp] = await ftso.getCurrentPrice();
-            const priceValue = Number(price) / 1e5; // Assuming 5 decimals
+          // Update price history with realistic data
+          updatePriceHistory(priceData.symbol, priceData.price);
+        }
+      });
 
-            newPrices[symbol] = priceValue;
-            // Store as ISO string for proper serialization
-            newTimestamps[symbol] = new Date(Number(timestamp) * 1000).toISOString();
-
-            // Update price history with realistic data
-            updatePriceHistory(symbol, priceValue);
-
-            // Clear any previous errors for this symbol
-            if (errors[symbol]) {
-              delete newErrors[symbol];
-            }
-          } else {
-            newPrices[symbol] = null;
-            newTimestamps[symbol] = null;
-            newErrors[symbol] = `No FTSO found for ${symbol}`;
-          }
-        } catch (err) {
-          console.warn(`Could not fetch ${symbol}:`, err);
+      // Check for missing symbols
+      FTSO_SYMBOLS.forEach(symbol => {
+        if (!newPrices[symbol]) {
           newPrices[symbol] = null;
           newTimestamps[symbol] = null;
-          newErrors[symbol] = `Failed to fetch ${symbol} price`;
+          newErrors[symbol] = `No FTSO data for ${symbol}`;
         }
-      }
+      });
 
       setFtsoPrices(newPrices);
       setTimestamps(newTimestamps);
@@ -188,6 +157,7 @@ export default function FTSODashboard() {
       toast.error("Failed to fetch prices");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 

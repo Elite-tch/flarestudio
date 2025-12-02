@@ -24,6 +24,11 @@ export const metadata = {
   description:
     "The ultimate Flare Network developer platform. Connect wallets, access FTSO price feeds, bring Web2 data on-chain with FDC, test RPC calls, and deploy with ready-to-use Hardhat & Foundry examples.",
   keywords: "Flare Network, FTSO, FDC, blockchain development, Web3 toolkit, smart contracts, price oracles, Web2 data, Hardhat, Foundry, developer tools",
+  icons: {
+    icon: '/flarelogo.png',
+    shortcut: '/flarelogo.png',
+    apple: '/flarelogo.png',
+  },
   openGraph: {
     title: "FlareStudio - Flare Network Developer Toolkit & Playground",
     description: "Build dApps faster on Flare Network with our interactive developer toolkit. Access FTSO oracles, FDC data, and ready-to-deploy code examples.",
@@ -32,7 +37,7 @@ export const metadata = {
     siteName: "FlareStudio",
     images: [
       {
-        url: "/flarelogo.png", // Consider adding an OpenGraph image
+        url: "/flarelogo.png",
         width: 1200,
         height: 630,
         alt: "FlareStudio - Flare Network Developer Toolkit",
