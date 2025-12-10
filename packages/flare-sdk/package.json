@@ -1,0 +1,66 @@
+{
+    "name": "@flarestudio/flare-sdk",
+    "version": "0.1.5",
+    "description": "Official TypeScript/JavaScript SDK for Flare blockchain - Access FTSO, FDC, fAssets, Staking, and more",
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "require": "./dist/index.js",
+            "import": "./dist/index.mjs",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "test": "vitest",
+        "typecheck": "tsc --noEmit",
+        "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+        "flare",
+        "blockchain",
+        "ftso",
+        "fdc",
+        "fassets",
+        "web3",
+        "ethereum",
+        "defi",
+        "oracle",
+        "attestation",
+        "staking",
+        "typescript"
+    ],
+    "author": "FlareStudio",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Elite-tch/flarestudio.git",
+        "directory": "packages/flare-sdk"
+    },
+    "bugs": {
+        "url": "https://github.com/Elite-tch/flarestudio/issues"
+    },
+    "homepage": "https://flarestudio.xyz",
+    "dependencies": {
+        "ethers": "^6.16.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@vitest/coverage-v8": "^4.0.15",
+        "prettier": "^3.0.0",
+        "tsup": "^8.0.0",
+        "typescript": "^5.3.0",
+        "vitest": "^4.0.15"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
