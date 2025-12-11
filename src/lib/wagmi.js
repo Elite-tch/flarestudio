@@ -38,13 +38,27 @@ export const coston2 = {
     testnet: true,
 };
 
-export const config = getDefaultConfig({
-    appName: 'FlareStudio',
-    projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
+// export const config = getDefaultConfig({
+//     appName: 'FlareStudio',
+//     projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
+//     chains: [flare, coston2],
+//     transports: {
+//         [flare.id]: http(),
+//         [coston2.id]: http(),
+//     },
+//     ssr: false,
+// });
+
+export function createRainbowConfig() {
+  return getDefaultConfig({
+    appName: "FlareStudio",
+    projectId:
+      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "YOUR_PROJECT_ID",
     chains: [flare, coston2],
     transports: {
-        [flare.id]: http(),
-        [coston2.id]: http(),
+      [flare.id]: http(),
+      [coston2.id]: http(),
     },
-    ssr: true,
-});
+    ssr: false, // disable SSR
+  });
+}

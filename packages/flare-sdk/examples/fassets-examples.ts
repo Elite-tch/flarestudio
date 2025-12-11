@@ -1,14 +1,10 @@
 import { FlareSDK } from '@flarestudio/flare-sdk';
 import { Wallet, JsonRpcProvider } from 'ethers';
 
-// Setup (Mock for example purposes)
-// In a real application, you would get the signer from the user's wallet (e.g., MetaMask)
+
 const provider = new JsonRpcProvider('https://coston2-api.flare.network/ext/C/rpc');
 const signer = Wallet.createRandom(provider);
 
-/**
- * Example 1: Get fAsset Balance
- */
 async function example1_balance() {
     const sdk = new FlareSDK({ network: 'coston2' });
 
@@ -20,18 +16,14 @@ async function example1_balance() {
     }
 }
 
-/**
- * Example 2: Mint fAssets (Reserve Collateral)
- */
 async function example2_mint() {
     const sdk = new FlareSDK({ network: 'coston2' });
 
-    // 1. Get collateral requirements
     try {
         const collateral = await sdk.fassets.getCollateralRequirements('fXRP', 1); // 1 lot
         console.log('Collateral Required:', collateral.required, collateral.currency);
 
-        // 2. Mint (Reserve)
+       
         const tx = await sdk.fassets.mint('fXRP', 1, {
             agent: '0xAgentAddress...'
         }, signer);
@@ -44,15 +36,14 @@ async function example2_mint() {
     }
 }
 
-/**
- * Example 3: Redeem fAssets
- */
+
+ 
 async function example3_redeem() {
     const sdk = new FlareSDK({ network: 'coston2' });
 
     try {
         const tx = await sdk.fassets.redeem('fXRP', 1, {
-            to: 'rXRPAddress...' // Destination address on underlying chain
+            to: 'rXRPAddress...' 
         }, signer);
 
         console.log('Redeem TX:', tx.hash);

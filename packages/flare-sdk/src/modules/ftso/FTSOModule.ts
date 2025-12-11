@@ -2,21 +2,15 @@ import { Contract, JsonRpcProvider } from 'ethers';
 import type { FTSOPrice, CacheOptions, PriceCallback, UnsubscribeFunction } from '../../types';
 import { FTSOError, ErrorCodes } from '../../core/errors';
 
-// Flare Contract Registry ABI - to get actual contract addresses
 const CONTRACT_REGISTRY_ABI = [
     'function getContractAddressByName(string memory _name) external view returns (address)',
 ];
 
-// FTSO Registry ABI - minimal interface for price fetching
 const FTSO_REGISTRY_ABI = [
     'function getCurrentPriceWithDecimals(string memory _symbol) external view returns (uint256 _price, uint256 _timestamp, uint256 _assetPriceUsdDecimals)',
     'function getSupportedSymbols() external view returns (string[] memory _supportedSymbols)',
 ];
 
-/**
- * FTSO Module
- * Access real-time and historical price data from Flare's FTSO system
- */
 export class FTSOModule {
     private provider: JsonRpcProvider;
     private contractRegistryAddress: string;
