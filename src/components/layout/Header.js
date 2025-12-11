@@ -192,7 +192,7 @@ export default function Header() {
             </div>
            
           </div>
-<div>
+
             <Link href="/analytics-dashboard" >
                
                 Analytics Dashboard
@@ -204,8 +204,7 @@ export default function Header() {
                 Docs
                 
             </Link>
-        </div>
-
+       
 
           <div>
             <Tooltip>
@@ -338,12 +337,17 @@ export default function Header() {
                 
             </Link>
 
-             <Link href="/docs" >
+          
+        </div>
+ <div className="mb-3">
+           <Link href="/docs" >
                
                 Docs
                 
             </Link>
         </div>
+
+
           <div className="py-2 px-4">
             <Tooltip>
                 <TooltipTrigger asChild>
