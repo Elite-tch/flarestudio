@@ -198,6 +198,12 @@ export default function Header() {
                 Analytics Dashboard
                 
             </Link>
+
+             <Link href="/docs" >
+               
+                Docs
+                
+            </Link>
         </div>
 
 
@@ -329,6 +335,12 @@ export default function Header() {
             >
                
                 Analytics Dashboard
+                
+            </Link>
+
+             <Link href="/docs" >
+               
+                Docs
                 
             </Link>
         </div>
