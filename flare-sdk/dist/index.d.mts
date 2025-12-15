@@ -466,8 +466,7 @@ declare class FAssetsModule {
 
 /**
  * State Connector Module
- * interact with the State Connector contract to read confirmed voting rounds and merkle roots.
- * (No Mock Data - Direct Blockchain Interaction)
+ * interact with the State Connector (or Relay) contract to read confirmed voting rounds and merkle roots.
  */
 declare class StateConnectorModule {
     private provider;
@@ -476,7 +475,8 @@ declare class StateConnectorModule {
     private stateConnectorAddress;
     constructor(provider: JsonRpcProvider, network: string);
     /**
-     * Resolve StateConnector address from registry
+     * Resolve StateConnector/Relay address from registry.
+     * Tries 'Relay' first (Coston2), then 'StateConnector' (Mainnet/Legacy).
      */
     private getStateConnectorAddress;
     /**

@@ -6,7 +6,7 @@ const CONTRACT_REGISTRY_ABI = [
     'function getContractAddressByName(string memory _name) external view returns (address)',
 ];
 
-// State Connector ABI (Real interface)
+// State Connector / Relay ABI
 const STATE_CONNECTOR_ABI = [
     'function lastConfirmedRoundId() external view returns (uint256)',
     'function merkleRoots(uint256 _roundId) external view returns (bytes32)',
@@ -15,8 +15,7 @@ const STATE_CONNECTOR_ABI = [
 
 /**
  * State Connector Module
- * interact with the State Connector contract to read confirmed voting rounds and merkle roots.
- * (No Mock Data - Direct Blockchain Interaction)
+ * interact with the State Connector (or Relay) contract to read confirmed voting rounds and merkle roots.
  */
 export class StateConnectorModule {
     private provider: JsonRpcProvider;
@@ -30,17 +29,25 @@ export class StateConnectorModule {
     }
 
     /**
-     * Resolve StateConnector address from registry
+     * Resolve StateConnector/Relay address from registry.
+     * Tries 'Relay' first (Coston2), then 'StateConnector' (Mainnet/Legacy).
      */
     private async getStateConnectorAddress(): Promise<string> {
         if (this.stateConnectorAddress) return this.stateConnectorAddress;
 
         try {
             const registry = new Contract(this.contractRegistryAddress, CONTRACT_REGISTRY_ABI, this.provider);
-            const addr = await registry.getContractAddressByName('StateConnector');
+
+            // Try getting 'Relay' first (common on newer testnets/deployments)
+            let addr = await registry.getContractAddressByName('Relay').catch(() => null);
 
             if (!addr || addr === '0x0000000000000000000000000000000000000000') {
-                throw new Error('StateConnector contract not found in registry');
+                // Fallback to 'StateConnector'
+                addr = await registry.getContractAddressByName('StateConnector').catch(() => null);
+            }
+
+            if (!addr || addr === '0x0000000000000000000000000000000000000000') {
+                throw new Error('StateConnector/Relay contract not found in registry');
             }
 
             this.stateConnectorAddress = addr;
@@ -95,12 +102,14 @@ export class StateConnectorModule {
      */
     subscribeToFinalizedRounds(callback: (roundId: number, merkleRoot: string) => void): () => void {
         let sc: Contract | null = null;
+        let isSubscribed = true;
 
         const setup = async () => {
             try {
                 const addr = await this.getStateConnectorAddress();
-                sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
+                if (!isSubscribed) return;
 
+                sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
                 sc.on('RoundFinalized', (roundId, merkleRoot) => {
                     callback(Number(roundId), merkleRoot);
                 });
@@ -112,6 +121,7 @@ export class StateConnectorModule {
         setup();
 
         return () => {
+            isSubscribed = false;
             if (sc) {
                 sc.removeAllListeners('RoundFinalized');
             }

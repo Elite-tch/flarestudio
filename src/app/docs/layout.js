@@ -21,17 +21,10 @@ const sidebarItems = [
             { name: "Wallet", href: "/docs/modules/wallet" },
             { name: "Staking", href: "/docs/modules/staking" },
             { name: "fAssets", href: "/docs/modules/fassets" },
-            { name: "State Connector", href: "/docs/modules/state-connector" },
-            { name: "Utils", href: "/docs/modules/utils" },
+          
         ]
     },
-    {
-        title: "Guides",
-        items: [
-            { name: "Building a DeFi App", href: "/docs/guides/defi-app" },
-            { name: "Bridging Assets", href: "/docs/guides/bridging" },
-        ]
-    }
+    
 ]
 
 export default function DocsLayout({ children }) {

@@ -513,6 +513,155 @@ console.log('NFT minted!');`} />
                     </div>
                 </div>
             </div>
+            {/* Complete Example */}
+            <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-gray-900">Complete React/Next.js Example</h2>
+                <p className="text-gray-600">
+                    A production-ready Wallet Dashboard allowing users to connect, view balances, send funds, and sign messages.
+                </p>
+                <CodeBlock code={`'use client';
+import { useState, useEffect } from 'react';
+import { FlareSDK } from '@flarestudio/flare-sdk';
+
+export default function WalletDashboard() {
+    const [sdk] = useState(() => new FlareSDK({ network: 'coston2' }));
+    const [connected, setConnected] = useState(false);
+    const [address, setAddress] = useState('');
+    const [balance, setBalance] = useState('0');
+    const [loading, setLoading] = useState(false);
+    
+    // Transaction State
+    const [recipient, setRecipient] = useState('');
+    const [amount, setAmount] = useState('');
+    const [status, setStatus] = useState('');
+
+    // Connect Handler
+    const connect = async () => {
+        try {
+            setLoading(true);
+            const addr = await sdk.wallet.connect(window.ethereum);
+            setAddress(addr);
+            setConnected(true);
+            await refreshBalance();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to connect wallet');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Refresh Balance
+    const refreshBalance = async () => {
+        if (!sdk.wallet.isConnected()) return;
+        const bal = await sdk.wallet.getBalance();
+        setBalance(bal.flr);
+    };
+
+    // Send Handlers
+    const handleSend = async () => {
+        if (!recipient || !amount) return;
+        try {
+            setStatus('Initiating transaction...');
+            const tx = await sdk.wallet.send({
+                to: recipient,
+                value: amount
+            });
+            setStatus(\`Transaction sent! Hash: \${tx.hash}\`);
+            
+            await tx.wait();
+            setStatus('Transaction Confirmed! ✅');
+            await refreshBalance();
+            setRecipient('');
+            setAmount('');
+        } catch (e) {
+            setStatus(\`Error: \${e.message}\`);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-950 text-white p-8 font-sans">
+            <div className="max-w-md mx-auto space-y-8">
+                
+                {/* Header */}
+                <div className="text-center space-y-2">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                        Wallet Dashboard
+                    </h1>
+                    <p className="text-gray-400">Flare Network Integration</p>
+                </div>
+
+                {/* Wallet Card */}
+                {!connected ? (
+                    <button
+                        onClick={connect}
+                        disabled={loading}
+                        className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-100 transition-transform hover:scale-[1.02] disabled:opacity-50"
+                    >
+                        {loading ? 'Connecting...' : 'Connect Wallet'}
+                    </button>
+                ) : (
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                        
+                        {/* Account Info */}
+                        <div className="space-y-1">
+                            <div className="text-xs text-gray-500 uppercase tracking-wider">Connected Account</div>
+                            <div className="font-mono text-green-400 bg-green-400/10 inline-block px-3 py-1 rounded-full text-sm">
+                                {address.slice(0, 6)}...{address.slice(-4)}
+                            </div>
+                        </div>
+
+                        {/* Balance */}
+                        <div className="space-y-1">
+                            <div className="text-xs text-gray-500 uppercase tracking-wider">Balance</div>
+                            <div className="text-4xl font-bold flex items-baseline gap-2">
+                                {parseFloat(balance).toFixed(4)}
+                                <span className="text-lg text-pink-500">C2FLR</span>
+                            </div>
+                        </div>
+
+                        <hr className="border-slate-800" />
+
+                        {/* Send Form */}
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-300">Send Funds</h3>
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    placeholder="Recipient Address (0x...)"
+                                    value={recipient}
+                                    onChange={(e) => setRecipient(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm focus:border-pink-500 outline-none transition-colors"
+                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="number"
+                                        placeholder="Amount"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm focus:border-pink-500 outline-none transition-colors"
+                                    />
+                                    <button
+                                        onClick={handleSend}
+                                        className="bg-pink-600 hover:bg-pink-500 px-6 rounded-lg font-bold transition-colors"
+                                    >
+                                        Send
+                                    </button>
+                                </div>
+                            </div>
+                            {status && (
+                                <div className="p-3 bg-slate-800 rounded-lg text-xs font-mono text-blue-300 break-all">
+                                    {status}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
-    )
+    );
+}`} />
+            </div>
+        </div>
+    );
 }

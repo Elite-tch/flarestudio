@@ -67,20 +67,22 @@ export default function DocsPage() {
                     <code>{`import { FlareSDK } from '@flarestudio/flare-sdk';
 
 // Initialize SDK
-const sdk = new FlareSDK({ network: 'flare' });
+const sdk = new FlareSDK({ network: 'coston2' });
 
 // 1. Get Real-time Prices
 const price = await sdk.ftso.getPrice('BTC/USD');
 console.log(\`BTC Price: \${price.price}\`);
 
-// 2. Verify Attestations
-const verified = await sdk.fdc.verifyBitcoinPayment({
-  txHash: '0x...',
-  amount: 0.5
-});
+// 2. Connect Wallet
+await sdk.wallet.connect(window.ethereum);
 
-// 3. Connect Wallet
-await sdk.wallet.connect('metamask');`}</code>
+// 3. Verify Payment (requires signer)
+const tx = await sdk.fdc.verifyBitcoinPayment({
+  txHash: '0x...',
+  sourceAddress: 'bc1q...',
+  destinationAddress: 'bc1q...',
+  amount: 0.5
+}, signer);`}</code>
                 </pre>
             </section>
         </div>

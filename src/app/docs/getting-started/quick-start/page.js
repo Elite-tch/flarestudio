@@ -40,13 +40,11 @@ const sdk = new FlareSDK({
                     <pre className="text-gray-300 font-mono text-sm overflow-x-auto">
                         {`// Get a single price
 const price = await sdk.ftso.getPrice('BTC/USD');
-console.log(price);
-// Output: { symbol: 'BTC/USD', price: 45000.50, decimals: 5, ... }
+console.log(price.price);
 
-// Subscribe to updates
-sdk.ftso.subscribe('BTC/USD', (data) => {
-  console.log('New price:', data.price);
-});`}
+// Get multiple prices (efficient)
+const prices = await sdk.ftso.getPrices(['BTC/USD', 'ETH/USD', 'FLR/USD']);
+console.log(prices);`}
                     </pre>
                 </div>
             </div>
@@ -66,6 +64,22 @@ console.log('Connected:', address);
 // Get balance
 const balance = await sdk.wallet.getBalance();
 console.log('Balance:', balance.flr);`}
+                    </pre>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900">4. Listen for Attestations</h2>
+                <p className="text-gray-600">
+                    Subscribe to FDC events to see when cross-chain data is verified.
+                </p>
+
+                <div className="bg-gray-900 rounded-lg p-4 shadow-lg">
+                    <pre className="text-gray-300 font-mono text-sm overflow-x-auto">
+                        {`sdk.fdc.subscribe((event) => {
+  console.log('New Attestation Request:', event.id);
+  console.log('Data:', event.data);
+});`}
                     </pre>
                 </div>
             </div>

@@ -1171,15 +1171,19 @@ var StateConnectorModule = class {
     this.network = network;
   }
   /**
-   * Resolve StateConnector address from registry
+   * Resolve StateConnector/Relay address from registry.
+   * Tries 'Relay' first (Coston2), then 'StateConnector' (Mainnet/Legacy).
    */
   async getStateConnectorAddress() {
     if (this.stateConnectorAddress) return this.stateConnectorAddress;
     try {
       const registry = new Contract(this.contractRegistryAddress, CONTRACT_REGISTRY_ABI5, this.provider);
-      const addr = await registry.getContractAddressByName("StateConnector");
+      let addr = await registry.getContractAddressByName("Relay").catch(() => null);
       if (!addr || addr === "0x0000000000000000000000000000000000000000") {
-        throw new Error("StateConnector contract not found in registry");
+        addr = await registry.getContractAddressByName("StateConnector").catch(() => null);
+      }
+      if (!addr || addr === "0x0000000000000000000000000000000000000000") {
+        throw new Error("StateConnector/Relay contract not found in registry");
       }
       this.stateConnectorAddress = addr;
       return addr;
@@ -1230,9 +1234,11 @@ var StateConnectorModule = class {
    */
   subscribeToFinalizedRounds(callback) {
     let sc = null;
+    let isSubscribed = true;
     const setup = async () => {
       try {
         const addr = await this.getStateConnectorAddress();
+        if (!isSubscribed) return;
         sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
         sc.on("RoundFinalized", (roundId, merkleRoot) => {
           callback(Number(roundId), merkleRoot);
@@ -1243,6 +1249,7 @@ var StateConnectorModule = class {
     };
     setup();
     return () => {
+      isSubscribed = false;
       if (sc) {
         sc.removeAllListeners("RoundFinalized");
       }
