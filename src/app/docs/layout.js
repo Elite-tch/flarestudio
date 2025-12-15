@@ -32,7 +32,7 @@ export default function DocsLayout({ children }) {
     const [isMobileOpen, setIsMobileOpen] = useState(false)
 
     return (
-        <div className="flex min-h-screen pt-[80px]">
+        <div className="flex min-h-screen md:pt-[80px] pt-[70px]">
             {/* Mobile Sidebar Toggle */}
             <button
                 className="md:hidden fixed bottom-4 right-4 z-50 bg-[#e93b6c] text-white p-3 rounded-full shadow-lg"
