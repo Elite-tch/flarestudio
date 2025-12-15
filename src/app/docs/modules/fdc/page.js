@@ -180,7 +180,7 @@ console.log('Verification request submitted!');`}
                 </p>
                 <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
                     <p className="text-sm text-yellow-700">
-                        <strong>Note:</strong> This example includes a manual implementation of <code>verifyEVMTransaction</code> to demonstrate the exact data encoding required for Flare's FDC.
+                        <strong>Note:</strong> This example includes a manual implementation of <code>verifyEVMTransaction</code> to demonstrate the exact data encoding required for Flare&apos;s FDC.
                     </p>
                 </div>
                 <TabbedCode
