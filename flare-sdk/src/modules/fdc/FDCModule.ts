@@ -1,145 +1,190 @@
-import { JsonRpcProvider, Contract } from 'ethers';
+import { JsonRpcProvider, Contract, Interface } from 'ethers';
 import { FDCError, ErrorCodes } from '../../core/errors';
 import { Attestation } from '../../types';
 
-// Simplified ABI for FDC / State Connector interactions
-// Note: In a real implementation, this would use the full ABI from @flarenetwork/flare-periphery-contract-artifacts
+// Registry ABI
+const CONTRACT_REGISTRY_ABI = [
+    'function getContractAddressByName(string memory _name) external view returns (address)',
+];
+
+// FDC Hub / State Connector common ABI
+// Note: AttestationRequest signature might vary slightly between network versions (SC vs FDC),
+// but we'll try to support the common event structure.
 const FDC_HUB_ABI = [
-    'function getAttestation(bytes32 _merkleRoot) external view returns (bool)',
     'event AttestationRequest(uint256 timestamp, bytes data)',
+    'function requestAttestation(bytes calldata _data) external payable',
 ];
 
 /**
  * FDC Module
- * Verify events and data from other blockchains using Flare Data Connector
+ * Interact with the Flare Data Connector to request and view attestations.
  */
 export class FDCModule {
     private provider: JsonRpcProvider;
-    private fdcHubAddress: string;
-    private subscriptions: Map<string, NodeJS.Timeout> = new Map();
+    private network: string;
+    private contractRegistryAddress: string;
+    private fdcHubAddress: string | null = null;
 
     constructor(provider: JsonRpcProvider, network: string) {
         this.provider = provider;
-
-        // FDC Hub addresses (Mock addresses for now as they vary by network/deployment)
-        const fdcAddresses: Record<string, string> = {
-            flare: '0x5d462E308003D03576C44961dD9777f9B5490000', // Placeholder
-            coston2: '0x5d462E308003D03576C44961dD9777f9B5490000', // Placeholder
-            songbird: '0x5d462E308003D03576C44961dD9777f9B5490000', // Placeholder
-            coston: '0x5d462E308003D03576C44961dD9777f9B5490000', // Placeholder
-        };
-
-        this.fdcHubAddress = fdcAddresses[network];
+        this.network = network;
+        this.contractRegistryAddress = '0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019'; // Standard Registry Address
     }
 
     /**
-     * Verify a Bitcoin payment
-     * @param params Payment details to verify
+     * Resolve FdcHub or StateConnector address from registry
      */
-    async verifyBitcoinPayment(params: {
-        txHash: string;
-        sourceAddress: string;
-        destinationAddress: string;
-        amount: number;
-    }): Promise<{ verified: boolean; blockNumber?: number; timestamp?: Date }> {
-        // In a real implementation, this would:
-        // 1. Construct the attestation request
-        // 2. Submit it to the FDC
-        // 3. Wait for the round to finalize
-        // 4. Check if the attestation was verified
+    private async getFdcHubAddress(): Promise<string> {
+        if (this.fdcHubAddress) return this.fdcHubAddress;
 
-        // Simulating verification for MVP
-        console.log('Verifying Bitcoin payment:', params);
-
-        // Mock delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        return {
-            verified: true,
-            blockNumber: 123456,
-            timestamp: new Date(),
-        };
-    }
-
-    /**
-     * Verify an attestation by ID (Merkle Root)
-     */
-    async verifyAttestation(attestationId: string): Promise<Attestation> {
         try {
-            // Mock implementation
-            return {
-                id: attestationId,
-                type: 'Payment',
-                status: 'success',
-                blockNumber: 100000,
-                timestamp: new Date(),
-                data: { verified: true }
-            };
+            const registry = new Contract(this.contractRegistryAddress, CONTRACT_REGISTRY_ABI, this.provider);
+
+            // Try 'FdcHub' first (newer), then 'StateConnector' (older/compat)
+            let addr = await registry.getContractAddressByName('FdcHub').catch(() => null);
+            if (!addr || addr === '0x0000000000000000000000000000000000000000') {
+                addr = await registry.getContractAddressByName('StateConnector');
+            }
+
+            if (!addr || addr === '0x0000000000000000000000000000000000000000') {
+                throw new Error('FdcHub/StateConnector not found in registry');
+            }
+
+            this.fdcHubAddress = addr;
+            return addr;
         } catch (error: any) {
             throw new FDCError(
-                `Failed to verify attestation: ${error.message}`,
-                ErrorCodes.VERIFICATION_FAILED,
+                `Failed to resolve FDC contract: ${error.message}`,
+                ErrorCodes.NETWORK_ERROR,
                 error
             );
         }
     }
 
     /**
-     * Get recent attestations
+     * Request a Bitcoin Payment Verification (Simulated encoding for MVP)
+     * In a full implementation, 'params' would be encoded into the specific byte sequence required by the specific Attestation Type definition.
+     */
+    async verifyBitcoinPayment(params: {
+        txHash: string;
+        sourceAddress: string;
+        destinationAddress: string;
+        amount: number;
+    }, signer: any): Promise<any> {
+        try {
+            const hubAddr = await this.getFdcHubAddress();
+            const fdcHub = new Contract(hubAddr, FDC_HUB_ABI, signer);
+
+            // TODO: Real implementation requires strict ABI encoding of the Payment Verification Request.
+            // For this SDK demo, we send a placeholder byte sequence to prove chain interaction.
+            // 0x + arbitrary bytes
+            const placeholderData = '0x1234567890abcdef' + params.txHash.replace('0x', '');
+
+            // Request attestation (usually requires a fee, handled by msg.value if needed, but often 0 on testnet for some types)
+            const tx = await fdcHub.requestAttestation(placeholderData);
+            return tx;
+        } catch (error: any) {
+            throw new FDCError(
+                `Failed to request verification: ${error.message}`,
+                ErrorCodes.TRANSACTION_FAILED,
+                error
+            );
+        }
+    }
+
+    /**
+     * Request an EVM Transaction Verification (Ethereum, simple payment or contract call)
+     */
+    async verifyEVMTransaction(params: {
+        txHash: string;
+        chainId: number; // e.g. 1 for ETH, 137 for Polygon
+    }, signer: any): Promise<any> {
+        try {
+            const hubAddr = await this.getFdcHubAddress();
+            const fdcHub = new Contract(hubAddr, FDC_HUB_ABI, signer);
+
+            // Mock encoding for EVM Transaction Verification
+            // 0x + marker for EVM + txHash
+            const placeholderData = '0xeeee' + params.txHash.replace('0x', '') + params.chainId.toString(16).padStart(4, '0');
+
+            const tx = await fdcHub.requestAttestation(placeholderData);
+            return tx;
+        } catch (error: any) {
+            throw new FDCError(
+                `Failed to request EVM verification: ${error.message}`,
+                ErrorCodes.TRANSACTION_FAILED,
+                error
+            );
+        }
+    }
+
+    /**
+     * Get recent attestation requests from the chain
      */
     async getRecentAttestations(options: {
-        type?: string;
         limit?: number;
-        fromBlock?: number;
     } = {}): Promise<Attestation[]> {
-        // Mock implementation
-        return [
-            {
-                id: '0x123...',
-                type: options.type || 'Payment',
-                status: 'success',
-                blockNumber: 100000,
-                timestamp: new Date(),
-            },
-            {
-                id: '0x456...',
-                type: options.type || 'Balance',
-                status: 'pending',
-                blockNumber: 100001,
-                timestamp: new Date(),
-            }
-        ];
+        try {
+            const hubAddr = await this.getFdcHubAddress();
+            const fdcHub = new Contract(hubAddr, FDC_HUB_ABI, this.provider);
+            const limit = options.limit || 10;
+
+            // Fetch last 1000 blocks or so
+            const currentBlock = await this.provider.getBlockNumber();
+            const fromBlock = Math.max(0, currentBlock - 5000);
+
+            const filter = fdcHub.filters.AttestationRequest();
+            const events = await fdcHub.queryFilter(filter, fromBlock, currentBlock);
+
+            // Sort descending and take limit
+            const recentEvents = events.reverse().slice(0, limit);
+
+            return recentEvents.map((e: any) => ({
+                id: e.transactionHash,
+                type: 'AttestationRequest', // Generic type as parsing data requires schema
+                status: 'submitted', // Request submitted to chain
+                blockNumber: e.blockNumber,
+                timestamp: new Date(), // Block timestamp fetching would vary, using current for list
+                data: e.args ? { rawData: e.args[1] } : {}
+            }));
+        } catch (error: any) {
+            console.warn('Failed to fetch real attestations, checking network...', error.message);
+            return []; // Return empty on error instead of throwing to prevent UI crash
+        }
     }
 
     /**
-     * Subscribe to new attestations
+     * Subscribe to new attestation requests
      */
-    subscribe(type: string, callback: (attestation: Attestation) => void): () => void {
-        const timer = setInterval(() => {
-            // Mock new attestation
-            const mockAttestation: Attestation = {
-                id: `0x${Date.now().toString(16)}`,
-                type,
-                status: 'success',
-                blockNumber: 100002,
-                timestamp: new Date(),
-            };
-            callback(mockAttestation);
-        }, 10000); // Every 10 seconds
+    subscribe(callback: (attestation: Attestation) => void): () => void {
+        let fdcHub: Contract | null = null;
+        const setup = async () => {
+            try {
+                const hubAddr = await this.getFdcHubAddress();
+                fdcHub = new Contract(hubAddr, FDC_HUB_ABI, this.provider);
 
-        this.subscriptions.set(type, timer);
+                fdcHub.on('AttestationRequest', (timestamp, data, event) => {
+                    const attestation: Attestation = {
+                        id: event.log.transactionHash,
+                        type: 'AttestationRequest',
+                        status: 'pending',
+                        blockNumber: event.log.blockNumber,
+                        timestamp: new Date(),
+                        data: { rawData: data }
+                    };
+                    callback(attestation);
+                });
+            } catch (e) {
+                console.error('Subscription setup failed:', e);
+            }
+        };
+
+        setup();
 
         return () => {
-            clearInterval(timer);
-            this.subscriptions.delete(type);
+            if (fdcHub) {
+                fdcHub.removeAllListeners('AttestationRequest');
+            }
         };
-    }
-
-    /**
-     * Cleanup subscriptions
-     */
-    cleanup(): void {
-        this.subscriptions.forEach(timer => clearInterval(timer));
-        this.subscriptions.clear();
     }
 }

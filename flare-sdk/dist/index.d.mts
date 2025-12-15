@@ -97,7 +97,7 @@ interface TokenInfo {
 interface Attestation {
     id: string;
     type: string;
-    status: 'pending' | 'success' | 'failed';
+    status: 'pending' | 'submitted' | 'success' | 'failed';
     blockNumber: number;
     timestamp: Date;
     data?: unknown;
@@ -259,47 +259,45 @@ declare class UtilsModule {
 
 /**
  * FDC Module
- * Verify events and data from other blockchains using Flare Data Connector
+ * Interact with the Flare Data Connector to request and view attestations.
  */
 declare class FDCModule {
     private provider;
+    private network;
+    private contractRegistryAddress;
     private fdcHubAddress;
-    private subscriptions;
     constructor(provider: JsonRpcProvider, network: string);
     /**
-     * Verify a Bitcoin payment
-     * @param params Payment details to verify
+     * Resolve FdcHub or StateConnector address from registry
+     */
+    private getFdcHubAddress;
+    /**
+     * Request a Bitcoin Payment Verification (Simulated encoding for MVP)
+     * In a full implementation, 'params' would be encoded into the specific byte sequence required by the specific Attestation Type definition.
      */
     verifyBitcoinPayment(params: {
         txHash: string;
         sourceAddress: string;
         destinationAddress: string;
         amount: number;
-    }): Promise<{
-        verified: boolean;
-        blockNumber?: number;
-        timestamp?: Date;
-    }>;
+    }, signer: any): Promise<any>;
     /**
-     * Verify an attestation by ID (Merkle Root)
+     * Request an EVM Transaction Verification (Ethereum, simple payment or contract call)
      */
-    verifyAttestation(attestationId: string): Promise<Attestation>;
+    verifyEVMTransaction(params: {
+        txHash: string;
+        chainId: number;
+    }, signer: any): Promise<any>;
     /**
-     * Get recent attestations
+     * Get recent attestation requests from the chain
      */
     getRecentAttestations(options?: {
-        type?: string;
         limit?: number;
-        fromBlock?: number;
     }): Promise<Attestation[]>;
     /**
-     * Subscribe to new attestations
+     * Subscribe to new attestation requests
      */
-    subscribe(type: string, callback: (attestation: Attestation) => void): () => void;
-    /**
-     * Cleanup subscriptions
-     */
-    cleanup(): void;
+    subscribe(callback: (attestation: Attestation) => void): () => void;
 }
 
 /**
@@ -468,49 +466,31 @@ declare class FAssetsModule {
 
 /**
  * State Connector Module
- * Verify state from any blockchain (advanced attestation)
+ * interact with the State Connector contract to read confirmed voting rounds and merkle roots.
+ * (No Mock Data - Direct Blockchain Interaction)
  */
 declare class StateConnectorModule {
     private provider;
     private network;
-    private subscriptions;
+    private contractRegistryAddress;
+    private stateConnectorAddress;
     constructor(provider: JsonRpcProvider, network: string);
     /**
-     * Verify a state proof
+     * Resolve StateConnector address from registry
      */
-    verify(params: {
-        proof: string;
-        attestationType: string;
-        sourceChain: string;
-    }): Promise<boolean>;
+    private getStateConnectorAddress;
     /**
-     * Query state from another chain
+     * Get the ID of the last finalized voting round
      */
-    queryState(params: {
-        chain: string;
-        blockNumber: number;
-        address: string;
-    }): Promise<any>;
+    getLastConfirmedRoundId(): Promise<number>;
     /**
-     * Get available attestation types
+     * Get the merkle root for a specific round
      */
-    getAttestationTypes(): Promise<string[]>;
+    getMerkleRoot(roundId: number): Promise<string>;
     /**
-     * Get proof history
+     * Subscribe to RoundFinalized events
      */
-    getProofHistory(params: {
-        chain: string;
-        fromBlock: number;
-        limit?: number;
-    }): Promise<any[]>;
-    /**
-     * Subscribe to state updates
-     */
-    subscribe(chain: string, callback: (update: any) => void): () => void;
-    /**
-     * Cleanup
-     */
-    cleanup(): void;
+    subscribeToFinalizedRounds(callback: (roundId: number, merkleRoot: string) => void): () => void;
 }
 
 /**

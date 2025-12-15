@@ -472,105 +472,140 @@ var UtilsModule = class {
     };
   }
 };
-
-// src/modules/fdc/FDCModule.ts
+var CONTRACT_REGISTRY_ABI2 = [
+  "function getContractAddressByName(string memory _name) external view returns (address)"
+];
+var FDC_HUB_ABI = [
+  "event AttestationRequest(uint256 timestamp, bytes data)",
+  "function requestAttestation(bytes calldata _data) external payable"
+];
 var FDCModule = class {
   constructor(provider, network) {
-    this.subscriptions = /* @__PURE__ */ new Map();
+    this.fdcHubAddress = null;
     this.provider = provider;
-    const fdcAddresses = {
-      flare: "0x5d462E308003D03576C44961dD9777f9B5490000",
-      // Placeholder
-      coston2: "0x5d462E308003D03576C44961dD9777f9B5490000",
-      // Placeholder
-      songbird: "0x5d462E308003D03576C44961dD9777f9B5490000",
-      // Placeholder
-      coston: "0x5d462E308003D03576C44961dD9777f9B5490000"
-      // Placeholder
-    };
-    this.fdcHubAddress = fdcAddresses[network];
+    this.network = network;
+    this.contractRegistryAddress = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
   }
   /**
-   * Verify a Bitcoin payment
-   * @param params Payment details to verify
+   * Resolve FdcHub or StateConnector address from registry
    */
-  async verifyBitcoinPayment(params) {
-    console.log("Verifying Bitcoin payment:", params);
-    await new Promise((resolve) => setTimeout(resolve, 1e3));
-    return {
-      verified: true,
-      blockNumber: 123456,
-      timestamp: /* @__PURE__ */ new Date()
-    };
-  }
-  /**
-   * Verify an attestation by ID (Merkle Root)
-   */
-  async verifyAttestation(attestationId) {
+  async getFdcHubAddress() {
+    if (this.fdcHubAddress) return this.fdcHubAddress;
     try {
-      return {
-        id: attestationId,
-        type: "Payment",
-        status: "success",
-        blockNumber: 1e5,
-        timestamp: /* @__PURE__ */ new Date(),
-        data: { verified: true }
-      };
+      const registry = new Contract(this.contractRegistryAddress, CONTRACT_REGISTRY_ABI2, this.provider);
+      let addr = await registry.getContractAddressByName("FdcHub").catch(() => null);
+      if (!addr || addr === "0x0000000000000000000000000000000000000000") {
+        addr = await registry.getContractAddressByName("StateConnector");
+      }
+      if (!addr || addr === "0x0000000000000000000000000000000000000000") {
+        throw new Error("FdcHub/StateConnector not found in registry");
+      }
+      this.fdcHubAddress = addr;
+      return addr;
     } catch (error) {
       throw new FDCError(
-        `Failed to verify attestation: ${error.message}`,
-        ErrorCodes.VERIFICATION_FAILED,
+        `Failed to resolve FDC contract: ${error.message}`,
+        ErrorCodes.NETWORK_ERROR,
         error
       );
     }
   }
   /**
-   * Get recent attestations
+   * Request a Bitcoin Payment Verification (Simulated encoding for MVP)
+   * In a full implementation, 'params' would be encoded into the specific byte sequence required by the specific Attestation Type definition.
+   */
+  async verifyBitcoinPayment(params, signer) {
+    try {
+      const hubAddr = await this.getFdcHubAddress();
+      const fdcHub = new Contract(hubAddr, FDC_HUB_ABI, signer);
+      const placeholderData = "0x1234567890abcdef" + params.txHash.replace("0x", "");
+      const tx = await fdcHub.requestAttestation(placeholderData);
+      return tx;
+    } catch (error) {
+      throw new FDCError(
+        `Failed to request verification: ${error.message}`,
+        ErrorCodes.TRANSACTION_FAILED,
+        error
+      );
+    }
+  }
+  /**
+   * Request an EVM Transaction Verification (Ethereum, simple payment or contract call)
+   */
+  async verifyEVMTransaction(params, signer) {
+    try {
+      const hubAddr = await this.getFdcHubAddress();
+      const fdcHub = new Contract(hubAddr, FDC_HUB_ABI, signer);
+      const placeholderData = "0xeeee" + params.txHash.replace("0x", "") + params.chainId.toString(16).padStart(4, "0");
+      const tx = await fdcHub.requestAttestation(placeholderData);
+      return tx;
+    } catch (error) {
+      throw new FDCError(
+        `Failed to request EVM verification: ${error.message}`,
+        ErrorCodes.TRANSACTION_FAILED,
+        error
+      );
+    }
+  }
+  /**
+   * Get recent attestation requests from the chain
    */
   async getRecentAttestations(options = {}) {
-    return [
-      {
-        id: "0x123...",
-        type: options.type || "Payment",
-        status: "success",
-        blockNumber: 1e5,
-        timestamp: /* @__PURE__ */ new Date()
-      },
-      {
-        id: "0x456...",
-        type: options.type || "Balance",
-        status: "pending",
-        blockNumber: 100001,
-        timestamp: /* @__PURE__ */ new Date()
+    try {
+      const hubAddr = await this.getFdcHubAddress();
+      const fdcHub = new Contract(hubAddr, FDC_HUB_ABI, this.provider);
+      const limit = options.limit || 10;
+      const currentBlock = await this.provider.getBlockNumber();
+      const fromBlock = Math.max(0, currentBlock - 5e3);
+      const filter = fdcHub.filters.AttestationRequest();
+      const events = await fdcHub.queryFilter(filter, fromBlock, currentBlock);
+      const recentEvents = events.reverse().slice(0, limit);
+      return recentEvents.map((e) => ({
+        id: e.transactionHash,
+        type: "AttestationRequest",
+        // Generic type as parsing data requires schema
+        status: "submitted",
+        // Request submitted to chain
+        blockNumber: e.blockNumber,
+        timestamp: /* @__PURE__ */ new Date(),
+        // Block timestamp fetching would vary, using current for list
+        data: e.args ? { rawData: e.args[1] } : {}
+      }));
+    } catch (error) {
+      console.warn("Failed to fetch real attestations, checking network...", error.message);
+      return [];
+    }
+  }
+  /**
+   * Subscribe to new attestation requests
+   */
+  subscribe(callback) {
+    let fdcHub = null;
+    const setup = async () => {
+      try {
+        const hubAddr = await this.getFdcHubAddress();
+        fdcHub = new Contract(hubAddr, FDC_HUB_ABI, this.provider);
+        fdcHub.on("AttestationRequest", (timestamp, data, event) => {
+          const attestation = {
+            id: event.log.transactionHash,
+            type: "AttestationRequest",
+            status: "pending",
+            blockNumber: event.log.blockNumber,
+            timestamp: /* @__PURE__ */ new Date(),
+            data: { rawData: data }
+          };
+          callback(attestation);
+        });
+      } catch (e) {
+        console.error("Subscription setup failed:", e);
       }
-    ];
-  }
-  /**
-   * Subscribe to new attestations
-   */
-  subscribe(type, callback) {
-    const timer = setInterval(() => {
-      const mockAttestation = {
-        id: `0x${Date.now().toString(16)}`,
-        type,
-        status: "success",
-        blockNumber: 100002,
-        timestamp: /* @__PURE__ */ new Date()
-      };
-      callback(mockAttestation);
-    }, 1e4);
-    this.subscriptions.set(type, timer);
-    return () => {
-      clearInterval(timer);
-      this.subscriptions.delete(type);
     };
-  }
-  /**
-   * Cleanup subscriptions
-   */
-  cleanup() {
-    this.subscriptions.forEach((timer) => clearInterval(timer));
-    this.subscriptions.clear();
+    setup();
+    return () => {
+      if (fdcHub) {
+        fdcHub.removeAllListeners("AttestationRequest");
+      }
+    };
   }
 };
 var WNAT_ABI = [
@@ -582,7 +617,7 @@ var WNAT_ABI = [
   "function undelegateAll()",
   "function votePowerOf(address owner) view returns (uint256)"
 ];
-var CONTRACT_REGISTRY_ABI2 = [
+var CONTRACT_REGISTRY_ABI3 = [
   "function getContractAddressByName(string memory _name) external view returns (address)"
 ];
 var REWARD_MANAGER_ABI = [
@@ -621,7 +656,7 @@ var StakingModule = class {
     try {
       const contractRegistry = new Contract(
         this.contractRegistryAddress,
-        CONTRACT_REGISTRY_ABI2,
+        CONTRACT_REGISTRY_ABI3,
         this.provider
       );
       this.rewardManagerAddress = String(await contractRegistry.getContractAddressByName("FtsoRewardManager"));
@@ -937,7 +972,7 @@ var IERC20_ABI = [
   "function approve(address spender, uint256 amount) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)"
 ];
-var CONTRACT_REGISTRY_ABI3 = [
+var CONTRACT_REGISTRY_ABI4 = [
   "function getContractAddressByName(string memory _name) external view returns (address)"
 ];
 var FAssetsModule = class {
@@ -953,7 +988,7 @@ var FAssetsModule = class {
     try {
       const contractRegistry = new Contract(
         this.contractRegistryAddress,
-        CONTRACT_REGISTRY_ABI3,
+        CONTRACT_REGISTRY_ABI4,
         this.provider
       );
       const name = `AssetManager${symbol.toUpperCase()}`;
@@ -1119,80 +1154,99 @@ var FAssetsModule = class {
     }
   }
 };
-
-// src/modules/stateConnector/StateConnectorModule.ts
+var CONTRACT_REGISTRY_ABI5 = [
+  "function getContractAddressByName(string memory _name) external view returns (address)"
+];
+var STATE_CONNECTOR_ABI = [
+  "function lastConfirmedRoundId() external view returns (uint256)",
+  "function merkleRoots(uint256 _roundId) external view returns (bytes32)",
+  "event RoundFinalized(uint256 indexed roundId, bytes32 merkleRoot)"
+];
 var StateConnectorModule = class {
   constructor(provider, network) {
-    this.subscriptions = /* @__PURE__ */ new Map();
+    this.contractRegistryAddress = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
+    // Flare/Coston2 Registry
+    this.stateConnectorAddress = null;
     this.provider = provider;
     this.network = network;
   }
   /**
-   * Verify a state proof
+   * Resolve StateConnector address from registry
    */
-  async verify(params) {
-    console.log("Verifying proof:", params);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return true;
-  }
-  /**
-   * Query state from another chain
-   */
-  async queryState(params) {
-    console.log("Querying state:", params);
-    return {
-      balance: "1000000",
-      nonce: 5,
-      codeHash: "0x123..."
-    };
-  }
-  /**
-   * Get available attestation types
-   */
-  async getAttestationTypes() {
-    return ["Payment", "BalanceDecreasingTransaction", "ConfirmedBlockHeightExists", "ReferencedPaymentNonexistence"];
-  }
-  /**
-   * Get proof history
-   */
-  async getProofHistory(params) {
-    return [
-      {
-        proof: "0xabc...",
-        timestamp: /* @__PURE__ */ new Date(),
-        verified: true
-      },
-      {
-        proof: "0xdef...",
-        timestamp: new Date(Date.now() - 36e5),
-        verified: true
+  async getStateConnectorAddress() {
+    if (this.stateConnectorAddress) return this.stateConnectorAddress;
+    try {
+      const registry = new Contract(this.contractRegistryAddress, CONTRACT_REGISTRY_ABI5, this.provider);
+      const addr = await registry.getContractAddressByName("StateConnector");
+      if (!addr || addr === "0x0000000000000000000000000000000000000000") {
+        throw new Error("StateConnector contract not found in registry");
       }
-    ];
+      this.stateConnectorAddress = addr;
+      return addr;
+    } catch (error) {
+      throw new SDKError(
+        `Failed to resolve StateConnector contract: ${error.message}`,
+        ErrorCodes.NETWORK_ERROR,
+        error
+      );
+    }
   }
   /**
-   * Subscribe to state updates
+   * Get the ID of the last finalized voting round
    */
-  subscribe(chain, callback) {
-    const timer = setInterval(() => {
-      callback({
-        chain,
-        timestamp: /* @__PURE__ */ new Date(),
-        type: "StateUpdate",
-        data: "0x..."
-      });
-    }, 15e3);
-    this.subscriptions.set(chain, timer);
-    return () => {
-      clearInterval(timer);
-      this.subscriptions.delete(chain);
+  async getLastConfirmedRoundId() {
+    try {
+      const addr = await this.getStateConnectorAddress();
+      const sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
+      const roundId = await sc.lastConfirmedRoundId();
+      return Number(roundId);
+    } catch (error) {
+      throw new SDKError(
+        `Failed to get last confirmed round: ${error.message}`,
+        ErrorCodes.NETWORK_ERROR,
+        error
+      );
+    }
+  }
+  /**
+   * Get the merkle root for a specific round
+   */
+  async getMerkleRoot(roundId) {
+    try {
+      const addr = await this.getStateConnectorAddress();
+      const sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
+      const root = await sc.merkleRoots(roundId);
+      return root;
+    } catch (error) {
+      throw new SDKError(
+        `Failed to get merkle root for round ${roundId}: ${error.message}`,
+        ErrorCodes.NETWORK_ERROR,
+        error
+      );
+    }
+  }
+  /**
+   * Subscribe to RoundFinalized events
+   */
+  subscribeToFinalizedRounds(callback) {
+    let sc = null;
+    const setup = async () => {
+      try {
+        const addr = await this.getStateConnectorAddress();
+        sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
+        sc.on("RoundFinalized", (roundId, merkleRoot) => {
+          callback(Number(roundId), merkleRoot);
+        });
+      } catch (e) {
+        console.error("StateConnector Subscription setup failed:", e);
+      }
     };
-  }
-  /**
-   * Cleanup
-   */
-  cleanup() {
-    this.subscriptions.forEach((timer) => clearInterval(timer));
-    this.subscriptions.clear();
+    setup();
+    return () => {
+      if (sc) {
+        sc.removeAllListeners("RoundFinalized");
+      }
+    };
   }
 };
 

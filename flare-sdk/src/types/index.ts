@@ -108,7 +108,7 @@ export interface TokenInfo {
 export interface Attestation {
     id: string;
     type: string;
-    status: 'pending' | 'success' | 'failed';
+    status: 'pending' | 'submitted' | 'success' | 'failed';
     blockNumber: number;
     timestamp: Date;
     data?: unknown;

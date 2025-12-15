@@ -1,14 +1,28 @@
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, Contract } from 'ethers';
 import { SDKError, ErrorCodes } from '../../core/errors';
+
+// Registry ABI
+const CONTRACT_REGISTRY_ABI = [
+    'function getContractAddressByName(string memory _name) external view returns (address)',
+];
+
+// State Connector ABI (Real interface)
+const STATE_CONNECTOR_ABI = [
+    'function lastConfirmedRoundId() external view returns (uint256)',
+    'function merkleRoots(uint256 _roundId) external view returns (bytes32)',
+    'event RoundFinalized(uint256 indexed roundId, bytes32 merkleRoot)'
+];
 
 /**
  * State Connector Module
- * Verify state from any blockchain (advanced attestation)
+ * interact with the State Connector contract to read confirmed voting rounds and merkle roots.
+ * (No Mock Data - Direct Blockchain Interaction)
  */
 export class StateConnectorModule {
     private provider: JsonRpcProvider;
     private network: string;
-    private subscriptions: Map<string, NodeJS.Timeout> = new Map();
+    private contractRegistryAddress = '0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019'; // Flare/Coston2 Registry
+    private stateConnectorAddress: string | null = null;
 
     constructor(provider: JsonRpcProvider, network: string) {
         this.provider = provider;
@@ -16,96 +30,91 @@ export class StateConnectorModule {
     }
 
     /**
-     * Verify a state proof
+     * Resolve StateConnector address from registry
      */
-    async verify(params: {
-        proof: string;
-        attestationType: string;
-        sourceChain: string;
-    }): Promise<boolean> {
-        console.log('Verifying proof:', params);
+    private async getStateConnectorAddress(): Promise<string> {
+        if (this.stateConnectorAddress) return this.stateConnectorAddress;
 
-        // Mock verification
-        // In reality, this would call the StateConnector contract to verify the Merkle proof
-        await new Promise(resolve => setTimeout(resolve, 500));
+        try {
+            const registry = new Contract(this.contractRegistryAddress, CONTRACT_REGISTRY_ABI, this.provider);
+            const addr = await registry.getContractAddressByName('StateConnector');
 
-        return true;
-    }
-
-    /**
-     * Query state from another chain
-     */
-    async queryState(params: {
-        chain: string;
-        blockNumber: number;
-        address: string;
-    }): Promise<any> {
-        console.log('Querying state:', params);
-
-        // Mock response
-        return {
-            balance: '1000000',
-            nonce: 5,
-            codeHash: '0x123...',
-        };
-    }
-
-    /**
-     * Get available attestation types
-     */
-    async getAttestationTypes(): Promise<string[]> {
-        return ['Payment', 'BalanceDecreasingTransaction', 'ConfirmedBlockHeightExists', 'ReferencedPaymentNonexistence'];
-    }
-
-    /**
-     * Get proof history
-     */
-    async getProofHistory(params: {
-        chain: string;
-        fromBlock: number;
-        limit?: number;
-    }): Promise<any[]> {
-        // Mock history
-        return [
-            {
-                proof: '0xabc...',
-                timestamp: new Date(),
-                verified: true,
-            },
-            {
-                proof: '0xdef...',
-                timestamp: new Date(Date.now() - 3600000),
-                verified: true,
+            if (!addr || addr === '0x0000000000000000000000000000000000000000') {
+                throw new Error('StateConnector contract not found in registry');
             }
-        ];
+
+            this.stateConnectorAddress = addr;
+            return addr;
+        } catch (error: any) {
+            throw new SDKError(
+                `Failed to resolve StateConnector contract: ${error.message}`,
+                ErrorCodes.NETWORK_ERROR,
+                error
+            );
+        }
     }
 
     /**
-     * Subscribe to state updates
+     * Get the ID of the last finalized voting round
      */
-    subscribe(chain: string, callback: (update: any) => void): () => void {
-        const timer = setInterval(() => {
-            callback({
-                chain,
-                timestamp: new Date(),
-                type: 'StateUpdate',
-                data: '0x...'
-            });
-        }, 15000);
+    async getLastConfirmedRoundId(): Promise<number> {
+        try {
+            const addr = await this.getStateConnectorAddress();
+            const sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
+            const roundId = await sc.lastConfirmedRoundId();
+            return Number(roundId);
+        } catch (error: any) {
+            throw new SDKError(
+                `Failed to get last confirmed round: ${error.message}`,
+                ErrorCodes.NETWORK_ERROR,
+                error
+            );
+        }
+    }
 
-        this.subscriptions.set(chain, timer);
+    /**
+     * Get the merkle root for a specific round
+     */
+    async getMerkleRoot(roundId: number): Promise<string> {
+        try {
+            const addr = await this.getStateConnectorAddress();
+            const sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
+            const root = await sc.merkleRoots(roundId);
+            return root;
+        } catch (error: any) {
+            throw new SDKError(
+                `Failed to get merkle root for round ${roundId}: ${error.message}`,
+                ErrorCodes.NETWORK_ERROR,
+                error
+            );
+        }
+    }
+
+    /**
+     * Subscribe to RoundFinalized events
+     */
+    subscribeToFinalizedRounds(callback: (roundId: number, merkleRoot: string) => void): () => void {
+        let sc: Contract | null = null;
+
+        const setup = async () => {
+            try {
+                const addr = await this.getStateConnectorAddress();
+                sc = new Contract(addr, STATE_CONNECTOR_ABI, this.provider);
+
+                sc.on('RoundFinalized', (roundId, merkleRoot) => {
+                    callback(Number(roundId), merkleRoot);
+                });
+            } catch (e) {
+                console.error('StateConnector Subscription setup failed:', e);
+            }
+        };
+
+        setup();
 
         return () => {
-            clearInterval(timer);
-            this.subscriptions.delete(chain);
+            if (sc) {
+                sc.removeAllListeners('RoundFinalized');
+            }
         };
-    }
-
-    /**
-     * Cleanup
-     */
-    cleanup(): void {
-        this.subscriptions.forEach(timer => clearInterval(timer));
-        this.subscriptions.clear();
     }
 }
