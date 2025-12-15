@@ -43,7 +43,7 @@ export default function DocsLayout({ children }) {
 
             {/* Sidebar */}
             <aside className={`
-        fixed md:sticky top-[80px] left-0 h-[calc(100vh-80px)] w-64 bg-white border-r overflow-y-auto transition-transform duration-300 z-40
+        fixed md:sticky md:top-[80px] top-[70px] left-0 h-[calc(100vh-80px)] w-64 bg-white border-r overflow-y-auto transition-transform duration-300 z-40
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}>
                 <div className="p-6">
