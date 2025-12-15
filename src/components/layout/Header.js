@@ -99,7 +99,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex justify-between gap-6 items-center">
-        
+
 
           <div className="relative  ">
             <button
@@ -188,48 +188,48 @@ export default function Header() {
                   </div>
                 </div>
               </div>
-             
+
             </div>
-           
+
           </div>
 
-            <Link href="/analytics-dashboard" >
-               
-                Analytics Dashboard
-                
-            </Link>
+          <Link href="/analytics-dashboard" >
 
-             <Link href="/docs" >
-               
-                Docs
-                
-            </Link>
-       
+            Analytics Dashboard
+
+          </Link>
+
+          <Link href="/docs" >
+
+            SDK Docs
+
+          </Link>
+
 
           <div>
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <motion.button
-                        onClick={() => setIsOpen(true)}
-                        className=" bg-[#e93b6c] text-white py-2 text-md rounded-md px-6 shadow-lg  transition-all duration-200 flex items-center justify-center group hover:bg-[#d12d5a]"
-                       
-                        whileTap={{ scale: 0.95 }}
-                       
-                    >
-                      Ask AI
-                    </motion.button>
-                </TooltipTrigger>
-               
+              <TooltipTrigger asChild>
+                <motion.button
+                  onClick={() => setIsOpen(true)}
+                  className=" bg-[#e93b6c] text-white py-2 text-md rounded-md px-6 shadow-lg  transition-all duration-200 flex items-center justify-center group hover:bg-[#d12d5a]"
+
+                  whileTap={{ scale: 0.95 }}
+
+                >
+                  Ask AI
+                </motion.button>
+              </TooltipTrigger>
+
             </Tooltip>
 
             <GeneratorModal open={isOpen} onOpenChange={setIsOpen} />
-        </div>
-        
-         
+          </div>
+
+
         </nav>
-       <div className="hidden md:block">
-       <WalletConnection />
-       </div>
+        <div className="hidden md:block">
+          <WalletConnection />
+        </div>
         <button
           className="md:hidden p-2 hover:bg-[#fff1f3] rounded-lg transition-colors duration-200"
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -328,50 +328,50 @@ export default function Header() {
               </div>
             </div>
           </div>
-        <div className="mb-3">
+          <div className="mb-3">
             <Link href="/analytics-dashboard"
-           className="py-2 px-4"
+              className="py-2 px-4"
             >
-               
-                Analytics Dashboard
-                
+
+              Analytics Dashboard
+
             </Link>
 
-          
-        </div>
- <div className="mb-3">
-           <Link href="/docs" >
-               
-                Docs
-                
+
+          </div>
+          <div className="mb-3">
+            <Link href="/docs" >
+
+              SDK Docs
+
             </Link>
-        </div>
+          </div>
 
 
           <div className="py-2 px-4">
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <motion.button
-                        onClick={() => setIsOpen(true)}
-                        className=" bg-[#e93b6c] text-white py-2 text-md rounded-md px-6 shadow-lg  transition-all duration-200 flex items-center justify-center group hover:bg-[#d12d5a]"
-                       
-                        whileTap={{ scale: 0.95 }}
-                       
-                    >
-                      Ask AI
-                    </motion.button>
-                </TooltipTrigger>
-               
+              <TooltipTrigger asChild>
+                <motion.button
+                  onClick={() => setIsOpen(true)}
+                  className=" bg-[#e93b6c] text-white py-2 text-md rounded-md px-6 shadow-lg  transition-all duration-200 flex items-center justify-center group hover:bg-[#d12d5a]"
+
+                  whileTap={{ scale: 0.95 }}
+
+                >
+                  Ask AI
+                </motion.button>
+              </TooltipTrigger>
+
             </Tooltip>
 
             <GeneratorModal open={isOpen} onOpenChange={setIsOpen} />
+          </div>
+
+          <div className="mt-4 px-4">
+            <WalletConnection />
+          </div>
         </div>
 
-        <div className="mt-4 px-4">
-      <WalletConnection />
-      </div>
-        </div> 
-     
       </div>
     </header>
   )

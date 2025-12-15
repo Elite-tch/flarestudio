@@ -1,37 +1,39 @@
-import { Geist, Geist_Mono } from "next/font/google"
-import "./globals.css"
-import '@rainbow-me/rainbowkit/styles.css';
-import { Providers } from './providers'
-import { Toaster } from "react-hot-toast"
-import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import "@rainbow-me/rainbowkit/styles.css";
+import { Providers } from "./providers";
+import { Toaster } from "react-hot-toast";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Header from "@/components/layout/Header";
-//import { GeneratorButton } from "@/components/layout/GeneratorButton";
+import Footer from "@/components/layout/Footer";
 
 const geistSans = Geist({
   subsets: ["latin"],
   variable: "--font-geist-sans",
-})
+});
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
-})
+});
 
 export const metadata = {
   metadataBase: new URL("https://www.flarestudio.xyz"),
   title: "FlareStudio - Flare Network Developer Toolkit & Playground",
   description:
     "The ultimate Flare Network developer platform. Connect wallets, access FTSO price feeds, bring Web2 data on-chain with FDC, test RPC calls, and deploy with ready-to-use Hardhat & Foundry examples.",
-  keywords: "Flare Network, FTSO, FDC, blockchain development, Web3 toolkit, smart contracts, price oracles, Web2 data, Hardhat, Foundry, developer tools",
+  keywords:
+    "Flare Network, FTSO, FDC, blockchain development, Web3 toolkit, smart contracts, price oracles, Web2 data, Hardhat, Foundry, developer tools",
   icons: {
-    icon: '/flarelogo.png',
-    shortcut: '/flarelogo.png',
-    apple: '/flarelogo.png',
+    icon: "/flarelogo.png",
+    shortcut: "/flarelogo.png",
+    apple: "/flarelogo.png",
   },
   openGraph: {
     title: "FlareStudio - Flare Network Developer Toolkit & Playground",
-    description: "Build dApps faster on Flare Network with our interactive developer toolkit. Access FTSO oracles, FDC data, and ready-to-deploy code examples.",
+    description:
+      "Build dApps faster on Flare Network with our interactive developer toolkit. Access FTSO oracles, FDC data, and ready-to-deploy code examples.",
     type: "website",
     url: "https://www.flarestudio.xyz",
     siteName: "FlareStudio",
@@ -47,8 +49,9 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "FlareStudio - Flare Network Developer Toolkit",
-    description: "The all-in-one platform for building on Flare Network with FTSO, FDC, and interactive code examples.",
-    creator: "@FlareNetworks", // Updated to official handle or user's handle
+    description:
+      "The all-in-one platform for building on Flare Network with FTSO, FDC, and interactive code examples.",
+    creator: "@FlareStudioXYZ",
     images: ["/flarelogo.png"],
   },
   alternates: {
@@ -58,7 +61,7 @@ export const metadata = {
     index: true,
     follow: true,
   },
-}
+};
 
 export default function RootLayout({ children }) {
   return (
@@ -70,12 +73,12 @@ export default function RootLayout({ children }) {
         <Providers>
           <Header />
           {children}
-          {/*  <GeneratorButton />*/}
+          <Footer />
           <Analytics />
           <SpeedInsights />
           <Toaster position="top-right" />
         </Providers>
       </body>
     </html>
-  )
+  );
 }
