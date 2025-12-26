@@ -1,5 +1,7 @@
+'use client'
+import { useState } from "react";
 import Link from 'next/link';
-import { ArrowRight, Code } from 'lucide-react';
+import { ArrowRight, Code, Check, Copy } from 'lucide-react';
 
 
 export default function Home() {
@@ -39,6 +41,14 @@ export default function Home() {
 }
 
 function SDKCard({ title, description, npmPackage, href }) {
+
+    const [copied, setCopied] = useState(false);
+    const handleCopy = () => {
+        navigator.clipboard.writeText(`npm install ${npmPackage}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000); // reset after 2 seconds
+    };
+
     return (
         <div className="p-8 rounded-2xl bg-[#fff1f3]  border border-slate-200  hover:shadow-xl transition-all">
             <div className="w-12 h-12 rounded-xl text-[#e93b6c] flex items-center justify-center  mb-6">
@@ -50,8 +60,16 @@ function SDKCard({ title, description, npmPackage, href }) {
             </p>
             <div className="mb-6">
                 <p className="text-sm text-left font-medium text-slate-700 dark:text-slate-300 mb-2">Installation</p>
-                <div className="bg-slate-900 text-left rounded-lg p-4 font-mono text-sm text-slate-300">
+                <div
+                    onClick={handleCopy}
+                    className="bg-slate-900 text-left rounded-lg p-4 font-mono text-sm text-slate-300 cursor-pointer flex justify-between items-center"
+                >
                     <code>npm install {npmPackage}</code>
+                    {copied ? (
+                        <Check size={16} className="text-green-400 ml-2" />
+                    ) : (
+                        <Copy size={16} className="text-slate-300 ml-2" />
+                    )}
                 </div>
             </div>
             <Link
