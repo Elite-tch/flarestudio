@@ -6,7 +6,7 @@ export default function Home() {
     return (
         <main className="min-h-screen  bg-[#ffe4e8]">
          {/* Hero Section */}
-            <section className="pt-32 pb-20 px-4">
+            <section className="md:pt-32 pt-28 pb-20 px-4">
                 <div className="container mx-auto max-w-6xl text-center">
                     <h1 className="text-3xl md:text-4xl  text-[#e93b6c] font-bold mb-4 tracking-tight">
                         Flare Studios SDKs
