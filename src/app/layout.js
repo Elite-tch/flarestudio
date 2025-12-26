@@ -22,9 +22,9 @@ export const metadata = {
   metadataBase: new URL("https://www.flarestudio.xyz"),
   title: "FlareStudio - Flare Network Developer Toolkit & Playground",
   description:
-    "The ultimate Flare Network developer platform. Connect wallets, access FTSO price feeds, bring Web2 data on-chain with FDC, test RPC calls, and deploy with ready-to-use Hardhat & Foundry examples.",
+    "The ultimate Flare Network developer platform. Connect wallets, access FTSO price feeds, bring Web2 data on-chain with FDC, test RPC calls, and deploy with ready-to-use Hardhat & Foundry examples, also proofrails sdk.",
   keywords:
-    "Flare Network, FTSO, FDC, blockchain development, Web3 toolkit, smart contracts, price oracles, Web2 data, Hardhat, Foundry, developer tools",
+    "Flare Network, FTSO, FDC, blockchain development, Web3 toolkit, smart contracts, price oracles, Web2 data, Hardhat, Foundry, developer tools, Flare sdk",
   icons: {
     icon: "/flarelogo.png",
     shortcut: "/flarelogo.png",
