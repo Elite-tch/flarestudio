@@ -8,19 +8,19 @@ const sidebarItems = [
     {
         title: "Getting Started",
         items: [
-            { name: "Introduction", href: "/docs" },
-            { name: "Installation", href: "/docs/getting-started/installation" },
-            { name: "Quick Start", href: "/docs/getting-started/quick-start" },
+            { name: "Introduction", href: "/sdk/flare-sdk" },
+            { name: "Installation", href: "/sdk/flare-sdk/getting-started/installation" },
+            { name: "Quick Start", href: "/sdk/flare-sdk/getting-started/quick-start" },
         ]
     },
     {
         title: "Modules",
         items: [
-            { name: "FTSO (Price Feeds)", href: "/docs/modules/ftso" },
-            { name: "FDC (Attestation)", href: "/docs/modules/fdc" },
-            { name: "Wallet", href: "/docs/modules/wallet" },
-            { name: "Staking", href: "/docs/modules/staking" },
-            { name: "fAssets", href: "/docs/modules/fassets" },
+            { name: "FTSO (Price Feeds)", href: "/sdk/flare-sdk/modules/ftso" },
+            { name: "FDC (Attestation)", href: "/sdk/flare-sdk/modules/fdc" },
+            { name: "Wallet", href: "/sdk/flare-sdk/modules/wallet" },
+            { name: "Staking", href: "/sdk/flare-sdk/modules/staking" },
+            { name: "fAssets", href: "/sdk/flare-sdk/modules/fassets" },
           
         ]
     },
@@ -43,7 +43,7 @@ export default function DocsLayout({ children }) {
 
             {/* Sidebar */}
             <aside className={`
-        fixed md:sticky md:top-[80px] top-[70px] left-0 h-[calc(100vh-80px)] w-64 bg-white border-r overflow-y-auto transition-transform duration-300 z-40
+        fixed md:sticky md:top-[80px] top-[70px] left-0 h-[calc(100vh-80px)] w-64 bg-[#fff1f3] border-r overflow-y-auto transition-transform duration-300 z-40
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}>
                 <div className="p-6">
@@ -61,7 +61,7 @@ export default function DocsLayout({ children }) {
                                                     href={item.href}
                                                     className={`flex items-center justify-between text-sm py-1 px-2 rounded transition-colors ${isActive
                                                             ? "text-[#e93b6c] bg-[#fff1f3] font-medium"
-                                                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                                            : "text-gray-600 hover:text-gray-900 hover:bg-[#ffe4e8]"
                                                         }`}
                                                     onClick={() => setIsMobileOpen(false)}
                                                 >
@@ -79,7 +79,7 @@ export default function DocsLayout({ children }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 bg-[#fff1f3] min-w-0 px-4 md:px-12 py-8 pb-20">
+            <main className="flex-1 bg-[#ffe4e8] min-w-0 px-4 md:px-12 py-8 pb-20">
                 <div className="max-w-4xl mx-auto">
                     {children}
                 </div>

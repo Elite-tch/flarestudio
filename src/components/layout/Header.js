@@ -199,9 +199,9 @@ export default function Header() {
 
           </Link>
 
-          <Link href="/docs" >
+          <Link href="/sdk" >
 
-            SDK Docs
+            SDK-Docs
 
           </Link>
 
