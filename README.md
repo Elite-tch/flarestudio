@@ -78,6 +78,47 @@ const tx = await sdk.fdc.verifyBitcoinPayment({
 - **Wallet**: Seamless connection and transaction management.
 - **Micro-Services**: Utilities for attestation encoding and decoding.
 
+## 📦 ProofRails SDK
+
+**ProofRails SDK** (@proofrails/sdk) is the banking-standard receipt generation layer for blockchain payments. It generates ISO 20022 compliant receipts for every blockchain transaction, anchored permanently on the Flare network. Perfect for businesses that need to prove blockchain payments to banks, auditors, or government entities.
+
+### Installation
+```bash
+npm install @proofrails/sdk viem
+```
+
+### Quick Usage
+```typescript
+import { useProofRails, useProofRailsPayment } from '@proofrails/sdk/react';
+
+function PaymentButton() {
+  // Initialize SDK
+  const sdk = useProofRails({
+    apiKey: process.env.NEXT_PUBLIC_PROOFRAILS_KEY
+  });
+
+  // Use Payment Hook
+  const { send, loading, error, receipt } = useProofRailsPayment(sdk);
+
+  const handlePayment = async () => {
+    await send({
+      amount: "100",
+      to: "0xRecipient...",
+      purpose: "Project Payment"
+      // ✨ Network auto-detected from wallet!
+    });
+    // ✅ ISO 20022 compliant receipt created!
+  };
+}
+```
+
+### Key Features
+- **ISO 20022 Compliant**: Receipts follow PAIN.001 and CAMT.053 standards used by SWIFT and SEPA
+- **Zero Config**: Auto-detects network (Mainnet/Testnet) from user's wallet
+- **Universal Verification**: Anyone can verify receipt authenticity without API keys
+- **Production Ready**: Built-in retries, rate limiting, and failover protection
+- **Framework Agnostic**: Works with React, Next.js, Node.js, and vanilla JS
+
 ## Open for Collaboration
 
 We believe in growing the Flare ecosystem together. We're open to:

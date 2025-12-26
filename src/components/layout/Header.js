@@ -340,7 +340,8 @@ export default function Header() {
 
           </div>
           <div className="mb-3">
-            <Link href="/docs" >
+            <Link href="/sdk" 
+             className="py-2 px-4">
 
               SDK Docs
 

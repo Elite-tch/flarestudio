@@ -6,14 +6,14 @@ export default function Home() {
     return (
         <main className="min-h-screen  bg-[#ffe4e8]">
          {/* Hero Section */}
-            <section className="pt-38 pb-20 px-4">
+            <section className="pt-32 pb-20 px-4">
                 <div className="container mx-auto max-w-6xl text-center">
-                    <h1 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
+                    <h1 className="text-3xl md:text-4xl  text-[#e93b6c] font-bold mb-4 tracking-tight">
                         Flare Studios SDKs
                        
                     </h1>
 
-                    <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-16 text-balance">
+                    <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-16 text-balance">
                         Powerful tools for building on the Flare Network. Choose the SDK that fits your needs.
                     </p>
 
