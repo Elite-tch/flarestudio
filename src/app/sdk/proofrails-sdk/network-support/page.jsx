@@ -49,9 +49,9 @@ export default function NetworkSupport() {
                     You rarely need to configure this manually.
                 </p>
                 <CodeBlock code={`// User connects wallet on Chain ID 14 (Flare)
-const { send } = useProofRailsPayment(sdk);
+const { createPayment, isLoading, error, receipt } = useProofRailsPayment();
 
-await send({ ... }); 
+await createPayment({ ... }); 
 // ✅ Automatically uses 'flare' network and 'FLR' currency`} />
 
                 <h3>Manual Override</h3>

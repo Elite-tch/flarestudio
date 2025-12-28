@@ -1,207 +1,338 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from "react";
-import { FlareSDK } from "@flarestudio/flare-sdk";
+import { useAccount, useSendTransaction } from 'wagmi';
+import { parseEther } from 'viem';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import {
+  ProofRailsProvider,
+  useProofRails,
+  useProofRailsPayment,
+  useReceiptsList,
+  useReceiptDetails,
+  useCreateProject,
+  useRateLimitInfo
+} from '@proofrails/sdk/react';
+import { useState } from 'react';
+import ProofRails from '@proofrails/sdk';
+import {
+  validateAmount,
+  validateTransactionHash,
+  validateApiKey,
+  validatePurpose
+} from '@proofrails/sdk';
 
-export default function FDCDashboard() {
-    const [sdk] = useState(() => new FlareSDK({ network: "coston2" }));
-    const [signer, setSigner] = useState(null);
-    const [address, setAddress] = useState("");
-    const [logs, setLogs] = useState([]);
-    const [txHash, setTxHash] = useState("");
-    const [verificationType, setVerificationType] = useState('bitcoin');
 
-    const addLog = (msg) => setLogs(prev => [msg, ...prev]);
+export default function PaymentPageWrapper() {
+  return (
+    <ProofRailsProvider apiKey={process.env.NEXT_PUBLIC_PROOFRAILS_KEY} network="auto">
+      <PaymentPage />
+    </ProofRailsProvider>
+  );
+}
 
-    const [prices, setPrices] = useState([]);
+function PaymentPage() {
+  const { address, isConnected } = useAccount();
+  const { sendTransactionAsync } = useSendTransaction();
+  const sdk = useProofRails();
+  const { createPayment, isLoading, error, receipt } = useProofRailsPayment();
+  const [amount, setAmount] = useState('');
+  const [to, setTo] = useState('');
+  const [purpose, setPurpose] = useState('Peer Payment');
+  const [txHash, setTxHash] = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  // Receipt operations
+  const [receiptId, setReceiptId] = useState('');
+  const [receiptDetails, setReceiptDetails] = useState(null);
+  const [receiptsList, setReceiptsList] = useState([]);
+  // Template
+  const [templateResult, setTemplateResult] = useState(null);
+  // Verification
+  const [verifyHash, setVerifyHash] = useState('');
+  const [verifyUrl, setVerifyUrl] = useState('');
+  const [verifyResult, setVerifyResult] = useState(null);
+  // Validation
+  const [validationInput, setValidationInput] = useState('');
+  const [validationType, setValidationType] = useState('amount');
+  const [validationResult, setValidationResult] = useState(null);
+  // Project
+  const [projectLabel, setProjectLabel] = useState('Test Project');
+  const [projectNetwork, setProjectNetwork] = useState('flare');
+  const [projectResult, setProjectResult] = useState(null);
+  // Hooks
+  const { fetch: fetchReceipts, receipts, loading: loadingReceipts, error: errorReceipts } = useReceiptsList(sdk);
+  const { fetch: fetchReceiptDetails, receipt: hookReceipt, loading: loadingReceiptDetails, error: errorReceiptDetails } = useReceiptDetails(sdk);
+  const { create: createProject, loading: loadingCreateProject } = useCreateProject();
+  const rateLimitInfo = useRateLimitInfo(sdk);
 
-    // Fetch live prices (FTSO)
-    useEffect(() => {
-        const fetchPrices = async () => {
-            try {
-                const results = await sdk.ftso.getPrices(['FLR', 'BTC', 'ETH']);
-                setPrices(results);
-            } catch (e) { console.error(e); }
-        };
-        fetchPrices();
-        const interval = setInterval(fetchPrices, 10000);
-        return () => clearInterval(interval);
-    }, [sdk]);
 
-    // Connect wallet
-    const connectWallet = async () => {
-        if (!window.ethereum) return alert("Please install MetaMask");
 
-        try {
-            const { BrowserProvider } = await import("ethers");
-            const provider = new BrowserProvider(window.ethereum);
-            const s = await provider.getSigner();
-            setSigner(s);
-            setAddress(await s.getAddress());
+  if (!isConnected) return <ConnectButton />;
 
-            await sdk.wallet.connect(window.ethereum);
-            addLog("Wallet connected");
-        } catch (e) {
-            console.error(e);
-            alert("Failed to connect wallet");
+  // Payment
+  const handleSend = async () => {
+    try {
+      let finalTxHash = txHash;
+
+      if (!finalTxHash) {
+        if (!amount || !to) {
+          alert('Please provide amount and recipient');
+          return;
         }
-    };
+        finalTxHash = await sendTransactionAsync({
+          to,
+          value: parseEther(amount)
+        });
+        setTxHash(finalTxHash);
+      }
 
-    // Submit attestation request
-    const handleRequest = async () => {
-        if (!signer) return alert("Connect wallet first");
+      const newReceipt = await createPayment({
+        amount: Number(amount),
+        from: address,
+        to,
+        purpose,
+        transactionHash: finalTxHash
+      });
 
-        try {
-            let response;
-            if (verificationType === 'bitcoin') {
-                response = await sdk.fdc.verifyBitcoinPayment(
-                    {
-                        txHash,
-                        sourceAddress: "bc1qsource...",
-                        destinationAddress: "bc1qdestination...",
-                        amount: 0.1,
-                    },
-                    signer
-                );
-            } else {
-                // Manually implement EVM verification payload
-                const { Contract, parseEther } = await import("ethers");
+      // Auto-fill fields for easier testing
+      if (newReceipt && newReceipt.id) {
+        setReceiptId(newReceipt.id);
+        setVerifyHash(finalTxHash);
+        // Note: Bundle URL is not available immediately, it requires anchoring
+      }
 
-                const registryAbi = ['function getContractAddressByName(string memory _name) external view returns (address)'];
-                const registry = new Contract('0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019', registryAbi, signer);
-                let hubAddress = await registry.getContractAddressByName('FdcHub').catch(() => null);
+      alert('Payment Successful! Receipt ID copied to operations panel.');
+    } catch (err) {
+      console.error(err);
+      alert('Error: ' + (err.message || err));
+    }
+  };
 
-                if (!hubAddress || hubAddress === '0x0000000000000000000000000000000000000000') {
-                    hubAddress = await registry.getContractAddressByName('StateConnector'); // Fallback
-                }
 
-                // Prepare Valid FDC Payload: Type (32 bytes) + Source (32 bytes) + Body
-                const type = "45564d5472616e73616374696f6e000000000000000000000000000000000000"; // EVMTransaction
-                const source = "7465737445544800000000000000000000000000000000000000000000000000"; // testETH
-                const cleanHash = txHash.trim().replace(/^0x/i, '');
-                const placeholderData = '0x' + type + source + cleanHash;
 
-                const fdcHubAbi = ['function requestAttestation(bytes calldata _data) external payable'];
-                const fdcHub = new Contract(hubAddress, fdcHubAbi, signer);
 
-                // Send with 0.1 C2FLR to cover the fee
-                response = await fdcHub.requestAttestation(placeholderData, { value: parseEther("0.1") });
-            }
 
-            addLog(`Request Submitted: ${JSON.stringify(response)}`);
-        } catch (e) {
-            console.error(e);
-            addLog(`Error: ${e.message}`);
-        }
-    };
+  // Template: Payment
+  const handleTemplatePayment = async () => {
+    setLoading(true);
+    try {
+      const res = await sdk.templates.payment({
+        amount: Number(amount),
+        from: address,
+        to,
+        purpose,
+        transactionHash: txHash
+      });
+      setTemplateResult(res);
+    } catch (err) {
+      setTemplateResult(err);
+    }
+    setLoading(false);
+  };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 p-6 rounded-xl flex items-center justify-center">
-            <div className="max-w-xl w-full space-y-8">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
-                        FDC Explorer
-                    </h2>
-                    <p className="text-gray-400 mt-2">Verify state from other chains on Flare</p>
-                </div>
+  // Receipt Operations
+  const handleGetReceipt = async () => {
+    setLoading(true);
+    try {
+      const res = await sdk.receipts.get(receiptId);
+      setReceiptDetails(res);
+    } catch (err) {
+      setReceiptDetails(err);
+    }
+    setLoading(false);
+  };
+  const handleListReceipts = async () => {
+    setLoading(true);
+    try {
+      const res = await sdk.receipts.list({ limit: 5, page: 1 });
+      setReceiptsList(res.items || []);
+    } catch (err) {
+      setReceiptsList([err]);
+    }
+    setLoading(false);
+  };
+  const handleGetArtifacts = async () => {
+    setLoading(true);
+    try {
+      const res = await sdk.receipts.getArtifacts(receiptId);
+      setResult(res);
+    } catch (err) {
+      // Handle the "Not Found" specifically for artifacts as "Pending Anchoring"
+      if (err.statusCode === 404) {
+        setResult({
+          status: 'info',
+          message: 'Artifacts not found yet. The receipt is likely still anchoring (moving to permanent storage). Please wait 1-2 minutes and try again.',
+          originalError: err
+        });
+      } else {
+        setResult(err);
+      }
+    }
+    setLoading(false);
+  };
 
-                {!address ? (
-                    <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                        <button
-                            onClick={connectWallet}
-                            className="bg-[#e93b6c] hover:bg-pink-600 text-white px-8 py-3 rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-pink-500/20"
-                        >
-                            Connect Wallet to Start
-                        </button>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {/* Prices Section (FTSO) */}
-                        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                <span>📈</span> Live FTSO Prices
-                            </h3>
-                            <div className="grid grid-cols-3 gap-4">
-                                {prices.length === 0 ? <p className="text-gray-500 text-xs">Loading...</p> : prices.map((p) => (
-                                    <div key={p.symbol} className="bg-black/20 p-3 rounded-lg text-center">
-                                        <div className="text-xs text-gray-400 font-bold">{p.symbol}</div>
-                                        <div className="text-lg font-mono text-pink-400">${p.price.toFixed(4)}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+  // Verification
+  const handleVerifyHash = async () => {
+    setLoading(true);
+    try {
+      const res = await sdk.verify.byHash(verifyHash);
+      setVerifyResult(res);
+    } catch (err) {
+      setVerifyResult(err);
+    }
+    setLoading(false);
+  };
+  const handleVerifyUrl = async () => {
+    setLoading(true);
+    try {
+      const res = await sdk.verify.byUrl(verifyUrl);
+      setVerifyResult(res);
+    } catch (err) {
+      setVerifyResult(err);
+    }
+    setLoading(false);
+  };
 
-                        {/* Connection Status */}
-                        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-400">Connected</span>
-                                <span className="font-mono text-green-400 bg-green-400/10 px-3 py-1 rounded-full text-sm">
-                                    {address.slice(0, 6)}...{address.slice(-4)}
-                                </span>
-                            </div>
-                        </div>
+  // Validation
+  const handleValidate = () => {
+    let res;
+    switch (validationType) {
+      case 'amount':
+        res = validateAmount(validationInput);
+        break;
+      case 'txHash':
+        res = validateTransactionHash(validationInput);
+        break;
+      case 'apiKey':
+        res = validateApiKey(validationInput);
+        break;
+      case 'purpose':
+        res = validatePurpose(validationInput);
+        break;
+      default:
+        res = 'Unknown type';
+    }
+    setValidationResult(res);
+  };
 
-                        {/* Verification Form */}
-                        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                <span>⚡</span> Request Verification (<span className="text-pink-400">FDC</span>)
-                            </h3>
+  // Project Management
+  const handleCreateProject = async () => {
+    setLoading(true);
+    try {
+      const res = await ProofRails.createProject({
+        label: projectLabel,
+        network: projectNetwork
+      });
+      setProjectResult(res);
+    } catch (err) {
+      setProjectResult(err);
+    }
+    setLoading(false);
+  };
 
-                            {/* Type Selector */}
-                            <div className="flex bg-black/30 p-1 rounded-lg mb-4">
-                                <button
-                                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${verificationType === 'bitcoin' ? 'bg-[#e93b6c] text-white' : 'text-gray-500 hover:text-white'}`}
-                                    onClick={() => setVerificationType('bitcoin')}
-                                >
-                                    Bitcoin
-                                </button>
-                                <button
-                                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${verificationType === 'evm' ? 'bg-[#e93b6c] text-white' : 'text-gray-500 hover:text-white'}`}
-                                    onClick={() => setVerificationType('evm')}
-                                >
-                                    EVM (Ethereum)
-                                </button>
-                            </div>
+  // Hooks: Receipts List
+  const handleFetchReceipts = async () => {
+    await fetchReceipts({ limit: 5 });
+  };
+  // Hooks: Receipt Details
+  const handleFetchReceiptDetails = async () => {
+    await fetchReceiptDetails(receiptId);
+  };
+  // Hooks: Create Project
+  const handleCreateProjectHook = async () => {
+    await createProject(projectLabel, projectNetwork);
+  };
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-xs text-gray-400 ml-1">
-                                        {verificationType === 'bitcoin' ? 'Bitcoin Transaction Hash' : 'EVM Transaction Hash'}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="0x..."
-                                        value={txHash}
-                                        onChange={(e) => setTxHash(e.target.value)}
-                                        className="w-full bg-black/30 border border-gray-700 p-3 rounded-lg text-white focus:border-pink-500 outline-none transition-colors"
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleRequest}
-                                    className="w-full bg-gradient-to-r from-[#e93b6c] to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white py-3 rounded-lg font-bold shadow-lg shadow-purple-500/20 transition-all"
-                                >
-                                    Verify {verificationType === 'bitcoin' ? 'Bitcoin' : 'EVM'} Transaction
-                                </button>
-                            </div>
-                        </div>
+  return (
+    <div className="p-8 max-w-6xl mx-auto border rounded-xl space-y-10">
+      <h1 className="text-2xl font-bold mb-6 pt-28">ProofRails SDK Test Dashboard</h1>
 
-                        {/* Logs Console */}
-                        <div className="bg-black/40 rounded-2xl p-4 border border-white/5 h-48 overflow-y-auto">
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Activity Log</h4>
-                            <div className="font-mono text-xs space-y-1">
-                                {logs.length === 0 ? <p className="text-gray-600 italic">No activity yet...</p> :
-                                    logs.map((l, i) => (
-                                        <div key={i} className="text-gray-300 border-l-2 border-gray-700 pl-2 py-0.5">
-                                            <span className="text-purple-400 opacity-50 mr-2">{new Date().toLocaleTimeString()}</span>
-                                            {l}
-                                        </div>
-                                    ))
-                                }
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+      <div className='grid md:grid-cols-2 gap-10'>
+        {/* Project Management */}
+        <section className="space-y-2">
+          <h2 className="font-semibold text-lg">Project Management</h2>
+          <input placeholder="Project Label" value={projectLabel} onChange={e => setProjectLabel(e.target.value)} className="w-full p-2 border rounded" />
+          <input placeholder="Network (flare/coston2)" value={projectNetwork} onChange={e => setProjectNetwork(e.target.value)} className="w-full p-2 border rounded" />
+          <button onClick={handleCreateProject} disabled={loading} className="w-full p-3 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">{loading ? 'Processing...' : 'Create Project'}</button>
+          {projectResult && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(projectResult, null, 2)}</pre>}
+        </section>
+
+        {/* Payment */}
+        <section className="space-y-2">
+          <h2 className="font-semibold text-lg">Send Payment</h2>
+          <input placeholder="Recipient Address (0x...)" value={to} onChange={e => setTo(e.target.value)} className="w-full p-2 border rounded" />
+          <input placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} className="w-full p-2 border rounded" />
+          <input placeholder="Purpose" value={purpose} onChange={e => setPurpose(e.target.value)} className="w-full p-2 border rounded" />
+          <input placeholder="Transaction Hash (optional)" value={txHash} onChange={e => setTxHash(e.target.value)} className="w-full p-2 border rounded" />
+          <button onClick={handleSend} disabled={isLoading} className="w-full p-3 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50">{isLoading ? 'Processing...' : 'Send Payment'}</button>
+          {receipt && <div className="bg-green-50 p-4 rounded-lg text-green-800 mt-2">✅ Receipt Created!<br />ID: {receipt.id}</div>}
+          {error && <div className="text-red-500 text-sm">{error.message}</div>}
+        </section>
+
+        {/* Templates */}
+        <section className="space-y-2">
+          <h2 className="font-semibold text-lg">Templates: Payment</h2>
+          <button onClick={handleTemplatePayment} disabled={loading} className="w-full p-3 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">{loading ? 'Processing...' : 'Create Payment Template'}</button>
+          {templateResult && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(templateResult, null, 2)}</pre>}
+        </section>
+
+        {/* Receipt Operations */}
+        <section className="space-y-2">
+          <h2 className="font-semibold text-lg">Receipt Operations</h2>
+          <input placeholder="Receipt ID" value={receiptId} onChange={e => setReceiptId(e.target.value)} className="w-full p-2 border rounded" />
+          <div className="flex gap-2">
+            <button onClick={handleGetReceipt} className="p-2 bg-gray-200 rounded">Get Receipt</button>
+            <button onClick={handleListReceipts} className="p-2 bg-gray-200 rounded">List Receipts</button>
+            <button onClick={handleGetArtifacts} className="p-2 bg-gray-200 rounded">Get Artifacts</button>
+          </div>
+
+
+          {receiptDetails && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(receiptDetails, null, 2)}</pre>}
+          {receiptsList.length > 0 && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(receiptsList, null, 2)}</pre>}
+          {result && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(result, null, 2)}</pre>}
+        </section>
+
+        {/* Verification */}
+        <section className="space-y-2">
+          <h2 className="font-semibold text-lg">Verification</h2>
+          <input placeholder="Bundle Hash" value={verifyHash} onChange={e => setVerifyHash(e.target.value)} className="w-full p-2 border rounded" />
+          <button onClick={handleVerifyHash} className="p-2 bg-gray-200 rounded">Verify by Hash</button>
+          <input placeholder="Bundle URL" value={verifyUrl} onChange={e => setVerifyUrl(e.target.value)} className="w-full p-2 border rounded" />
+          <button onClick={handleVerifyUrl} className="p-2 bg-gray-200 rounded">Verify by URL</button>
+          {verifyResult && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(verifyResult, null, 2)}</pre>}
+        </section>
+
+        {/* Validation */}
+        <section className="space-y-2">
+          <h2 className="font-semibold text-lg">Validation</h2>
+          <select value={validationType} onChange={e => setValidationType(e.target.value)} className="w-full p-2 border rounded">
+            <option value="amount">Amount</option>
+            <option value="txHash">Transaction Hash</option>
+            <option value="apiKey">API Key</option>
+            <option value="purpose">Purpose</option>
+          </select>
+          <input placeholder="Value to validate" value={validationInput} onChange={e => setValidationInput(e.target.value)} className="w-full p-2 border rounded" />
+          <button onClick={handleValidate} className="p-2 bg-gray-200 rounded">Validate</button>
+          {validationResult !== null && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(validationResult, null, 2)}</pre>}
+        </section>
+
+
+
+        {/* Hooks */}
+        <section className="space-y-2">
+          <h2 className="font-semibold text-lg">Hooks</h2>
+          <div className="flex gap-2">
+            <button onClick={handleFetchReceipts} className="p-2 bg-gray-200 rounded">Fetch Receipts (Hook)</button>
+            <button onClick={handleFetchReceiptDetails} className="p-2 bg-gray-200 rounded">Fetch Receipt Details (Hook)</button>
+            <button onClick={handleCreateProjectHook} className="p-2 bg-gray-200 rounded">Create Project (Hook)</button>
+          </div>
+          {receipts && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(receipts, null, 2)}</pre>}
+          {hookReceipt && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(hookReceipt, null, 2)}</pre>}
+          {rateLimitInfo && <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-2">{JSON.stringify(rateLimitInfo, null, 2)}</pre>}
+          {errorReceipts && <div className="text-red-500 text-sm">{errorReceipts.message}</div>}
+          {errorReceiptDetails && <div className="text-red-500 text-sm">{errorReceiptDetails.message}</div>}
+        </section>
+      </div>
+    </div>
+  );
 }

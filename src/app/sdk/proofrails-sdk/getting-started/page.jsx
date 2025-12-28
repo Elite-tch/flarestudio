@@ -18,7 +18,7 @@ export default function GettingStarted() {
           Install the SDK
         </h3>
         <p>Install the package using your preferred package manager.</p>
-        <CodeBlock code="npm install @proofrails/sdk Viem" language="bash" />
+        <CodeBlock code="npm install @proofrails/sdk" language="bash" />
 
         <h3 className="flex items-center gap-3 mt-12">
           <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#e93b6c] text-white text-sm font-bold">2</span>

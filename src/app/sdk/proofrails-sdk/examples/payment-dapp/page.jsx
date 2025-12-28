@@ -1,4 +1,10 @@
+'use client'
+
 import { CodeBlock } from "@/components/proofrails/CodeBlock";
+import { useAccount } from 'wagmi';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ProofRailsProvider, useProofRails, useProofRailsPayment } from '@proofrails/sdk/react';
+import { useState } from 'react';
 
 export default function PaymentDApp() {
     return (
@@ -17,11 +23,19 @@ export default function PaymentDApp() {
                 </p>
                 <CodeBlock code={`import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useProofRails, useProofRailsPayment } from '@proofrails/sdk/react';
+import { ProofRailsProvider, useProofRails, useProofRailsPayment } from '@proofrails/sdk/react';
 import { useState } from 'react';
 
-export default function PaymentPage() {
-  const { isConnected } = useAccount();
+export default function PaymentPageWrapper() {
+  return (
+    <ProofRailsProvider apiKey={process.env.NEXT_PUBLIC_PROOFRAILS_KEY} network="auto">
+      <PaymentPage />
+    </ProofRailsProvider>
+  );
+}
+
+function PaymentPage() {
+  const { address, isConnected } = useAccount();
   
   // 1. Initialize SDK
   const sdk = useProofRails({
@@ -30,17 +44,19 @@ export default function PaymentPage() {
   });
 
   // 2. Use Payment Hook
-  const { send, loading, error, receipt, txHash } = useProofRailsPayment(sdk);
+  const { createPayment, isLoading, error, receipt } = useProofRailsPayment();
   
   const [amount, setAmount] = useState('');
   const [to, setTo] = useState('');
 
   const handleSend = async () => {
     try {
-      await send({
-        amount,
+      await createPayment({
+        amount: Number(amount), // must be a number
+        from: address, // you may need to provide the sender address
         to,
-        purpose: "Peer Payment"
+        purpose: "Peer Payment",
+        transactionHash: '' // you may need to get this from the wallet
       });
       alert("Payment Successful!");
     } catch (err) {
@@ -52,7 +68,7 @@ export default function PaymentPage() {
 
   return (
     <div className="p-8 max-w-md mx-auto border rounded-xl">
-      <h1 className="text-2xl font-bold mb-6">Send Crypto</h1>
+      <h1 className="text-2xl font-bold mb-6 pt-24">Send Crypto</h1>
       
       {receipt ? (
         <div className="bg-green-50 p-4 rounded-lg text-green-800">
@@ -75,14 +91,14 @@ export default function PaymentPage() {
             className="w-full p-2 border rounded"
           />
           
-          {error && <div className="text-red-500 text-sm">{error}</div>}
+          {error && <div className="text-red-500 text-sm">{error.message}</div>}
           
           <button
             onClick={handleSend}
-            disabled={loading}
+            disabled={isLoading}
             className="w-full p-3 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
           >
-            {loading ? 'Processing...' : 'Send Payment'}
+            {isLoading ? 'Processing...' : 'Send Payment'}
           </button>
         </div>
       )}

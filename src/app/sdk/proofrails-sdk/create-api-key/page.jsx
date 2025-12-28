@@ -25,23 +25,46 @@ export default function CreateApiKeyPage() {
         }
     }, [projects]);
 
-    const createProject = (e) => {
+    const createProject = async (e) => {
         e.preventDefault();
+        console.log("🚀 Creating project... calling Production API"); // DEBUG LOG
         const formData = new FormData(e.target);
         const name = formData.get('name');
-        const network = formData.get('network');
 
-        const newProject = {
-            id: crypto.randomUUID(),
-            name,
-            network,
-            apiKey: `pr_${network === 'flare' ? 'live' : 'test'}_${Math.random().toString(36).substring(2, 15)}`,
-            createdAt: new Date().toISOString(),
-            requests: 0
-        };
+        try {
+            // Call the real production API
+            const response = await fetch('https://proofrails-clone-middleware.onrender.com/v1/public/api-keys', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name ? { label: name } : {}) // Send label if provided
+            });
 
-        setProjects([...projects, newProject]);
-        setShowCreateModal(false);
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Failed to create project: ${text}`);
+            }
+
+            const data = await response.json();
+
+            // Map the API response to our UI structure
+            // API returns: { id, project_id, label, api_key }
+            const newProject = {
+                id: data.project_id || data.id,
+                name: data.label || name || 'New Project',
+                network: 'flare',
+                apiKey: data.api_key,
+                createdAt: new Date().toISOString(),
+                requests: 0
+            };
+
+            setProjects([...projects, newProject]);
+            setShowCreateModal(false);
+        } catch (error) {
+            console.error('Error creating project:', error);
+            alert('Failed to connect to server. Please try again.');
+        }
     };
 
     const deleteProject = (id) => {
@@ -88,7 +111,7 @@ export default function CreateApiKeyPage() {
                 <div className="flex items-center gap-4 not-prose">
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="px-4 py-2 bg-[#e93b6c]  text-white dark:text-slate-900 rounded-lg font-medium hover:opacity-90 flex items-center gap-2"
+                        className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg font-medium hover:opacity-90 flex items-center gap-2"
                     >
                         <Plus size={18} /> New Project
                     </button>
@@ -130,7 +153,7 @@ export default function CreateApiKeyPage() {
                     <p className="text-slate-500 mb-6 max-w-xs mx-auto">Create your first project to generate an API key and start building.</p>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="px-4 py-2 bg-[#e93b6c]  text-white dark:text-slate-900 rounded-lg font-medium hover:opacity-90"
+                        className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg font-medium hover:opacity-90"
                     >
                         Create Project
                     </button>
@@ -183,7 +206,7 @@ export default function CreateApiKeyPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 rounded-lg bg-[#e93b6c] dark:bg-slate-100 text-white dark:text-slate-900 font-medium hover:opacity-90"
+                                    className="flex-1 px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-medium hover:opacity-90"
                                 >
                                     Create Project
                                 </button>
@@ -198,7 +221,7 @@ export default function CreateApiKeyPage() {
 
 function StatsCard({ icon: Icon, label, value, color, bg }) {
     return (
-        <div className="p-6 bg-[#fff1f3] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-lg ${bg} flex items-center justify-center ${color}`}>
                     <Icon size={24} />
@@ -222,7 +245,7 @@ function ProjectCard({ project, onDelete }) {
     };
 
     return (
-        <div className="bg-[#fff1f3] rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-4">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
