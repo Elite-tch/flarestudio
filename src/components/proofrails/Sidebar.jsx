@@ -8,6 +8,7 @@ import { Menu, X, ChevronDown, ChevronRight, Home, Key, Database, Shield, BookOp
 const navigation = [
     { name: 'Overview', href: '/sdk/proofrails-sdk/overview', icon: Home },
     { name: 'Getting Started', href: '/sdk/proofrails-sdk/getting-started', icon: Box },
+    { name: 'Demo', href: '/sdk/proofrails-sdk/demo', icon: Activity },
     { name: 'Create API Key', href: '/sdk/proofrails-sdk/create-api-key', icon: Key },
     {
         name: 'Core SDK',

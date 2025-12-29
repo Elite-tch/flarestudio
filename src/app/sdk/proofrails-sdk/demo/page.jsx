@@ -1,4 +1,17 @@
-'use client'
+'use client';
+
+import { useState } from 'react';
+import { CodeBlock } from "@/components/proofrails/CodeBlock";
+import { Code, Play } from 'lucide-react';
+import Link from 'next/link';
+import {
+  ArrowLeft, ArrowRight
+} from 'lucide-react';
+
+// Import the actual demo component
+import PaymentPageWrapper from '@/app/test/page';
+
+const demoSourceCode = `'use client'
 
 import { useAccount, useSendTransaction } from 'wagmi';
 import { parseEther } from 'viem';
@@ -70,8 +83,6 @@ function PaymentPage() {
   const { create: createProject, loading: loadingCreateProject } = useCreateProject();
   const rateLimitInfo = useRateLimitInfo(sdk);
 
-
-
   if (!isConnected) return <ConnectButton />;
 
   // Payment
@@ -103,7 +114,6 @@ function PaymentPage() {
       if (newReceipt && newReceipt.id) {
         setReceiptId(newReceipt.id);
         setVerifyHash(finalTxHash);
-        // Note: Bundle URL is not available immediately, it requires anchoring
       }
 
       alert('Payment Successful! Receipt ID copied to operations panel.');
@@ -112,10 +122,6 @@ function PaymentPage() {
       alert('Error: ' + (err.message || err));
     }
   };
-
-
-
-
 
   // Template: Payment
   const handleTemplatePayment = async () => {
@@ -146,6 +152,7 @@ function PaymentPage() {
     }
     setLoading(false);
   };
+
   const handleListReceipts = async () => {
     setLoading(true);
     try {
@@ -156,17 +163,17 @@ function PaymentPage() {
     }
     setLoading(false);
   };
+
   const handleGetArtifacts = async () => {
     setLoading(true);
     try {
       const res = await sdk.receipts.getArtifacts(receiptId);
       setResult(res);
     } catch (err) {
-      // Handle the "Not Found" specifically for artifacts as "Pending Anchoring"
       if (err.statusCode === 404) {
         setResult({
           status: 'info',
-          message: 'Artifacts not found yet. The receipt is likely still anchoring (moving to permanent storage). Please wait 1-2 minutes and try again.',
+          message: 'Artifacts not found yet. The receipt is likely still anchoring.',
           originalError: err
         });
       } else {
@@ -187,6 +194,7 @@ function PaymentPage() {
     }
     setLoading(false);
   };
+
   const handleVerifyUrl = async () => {
     setLoading(true);
     try {
@@ -197,18 +205,6 @@ function PaymentPage() {
     }
     setLoading(false);
   };
-
-  const handleVerifyByReceiptId = async () => {
-    setLoading(true);
-    try {
-      const res = await sdk.verify.byReceiptId(receiptId);
-      setVerifyResult(res);
-    } catch (err) {
-      setVerifyResult(err);
-    }
-    setLoading(false);
-  };
-
 
   // Validation
   const handleValidate = () => {
@@ -247,22 +243,22 @@ function PaymentPage() {
     setLoading(false);
   };
 
-  // Hooks: Receipts List
+  // Hooks
   const handleFetchReceipts = async () => {
     await fetchReceipts({ limit: 5 });
   };
-  // Hooks: Receipt Details
+
   const handleFetchReceiptDetails = async () => {
     await fetchReceiptDetails(receiptId);
   };
-  // Hooks: Create Project
+
   const handleCreateProjectHook = async () => {
     await createProject(projectLabel, projectNetwork);
   };
 
   return (
     <div className="min-h-screen bg-[#ffe4e8] p-4 md:p-8">
-      <div className=" mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 pt-20">
           <h1 className="text-4xl font-bold text-[#e93b6c] mb-2">
@@ -288,7 +284,7 @@ function PaymentPage() {
               placeholder="Network (flare/coston2)"
               value={projectNetwork}
               onChange={e => setProjectNetwork(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
             />
             <button
               onClick={handleCreateProject}
@@ -319,19 +315,19 @@ function PaymentPage() {
               placeholder="Amount (in native token)"
               value={amount}
               onChange={e => setAmount(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
             />
             <input
               placeholder="Purpose"
               value={purpose}
               onChange={e => setPurpose(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
             />
             <input
               placeholder="Transaction Hash (optional)"
               value={txHash}
               onChange={e => setTxHash(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
             />
             <button
               onClick={handleSend}
@@ -365,24 +361,9 @@ function PaymentPage() {
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
             />
             <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={handleGetReceipt}
-                className="p-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition text-sm font-medium"
-              >
-                Get Receipt
-              </button>
-              <button
-                onClick={handleListReceipts}
-                className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm font-medium"
-              >
-                List All
-              </button>
-              <button
-                onClick={handleGetArtifacts}
-                className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm font-medium"
-              >
-                Get Artifacts
-              </button>
+              <button onClick={handleGetReceipt} className="p-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition text-sm font-medium">Get Receipt</button>
+              <button onClick={handleListReceipts} className="p-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition text-sm font-medium">List All</button>
+              <button onClick={handleGetArtifacts} className="p-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition text-sm font-medium">Get Artifacts</button>
             </div>
             {receiptDetails && (
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -409,7 +390,7 @@ function PaymentPage() {
             <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
               <span className="text-2xl">✅</span> Verification
             </h2>
-
+            
             {/* Verify by Hash */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Verify by Hash</label>
@@ -420,12 +401,7 @@ function PaymentPage() {
                   onChange={e => setVerifyHash(e.target.value)}
                   className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
                 />
-                <button
-                  onClick={handleVerifyHash}
-                  className="px-4 py-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium whitespace-nowrap"
-                >
-                  Verify
-                </button>
+                <button onClick={handleVerifyHash} className="px-4 py-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium whitespace-nowrap">Verify</button>
               </div>
             </div>
 
@@ -437,14 +413,9 @@ function PaymentPage() {
                   placeholder="Bundle URL (https://...)"
                   value={verifyUrl}
                   onChange={e => setVerifyUrl(e.target.value)}
-                  className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
                 />
-                <button
-                  onClick={handleVerifyUrl}
-                  className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition font-medium whitespace-nowrap"
-                >
-                  Verify
-                </button>
+                <button onClick={handleVerifyUrl} className="px-4 py-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium whitespace-nowrap">Verify</button>
               </div>
             </div>
 
@@ -453,7 +424,7 @@ function PaymentPage() {
               <label className="text-sm font-medium text-gray-700">Download Receipt</label>
               <button
                 className="w-full px-4 py-3 bg-[#e93b6c] text-white rounded-lg font-semibold hover:bg-[#d12a5a] flex items-center justify-center gap-2 transition shadow-md"
-                onClick={() => window.open(`https://proofrails-clone-middleware.onrender.com/receipt/${receiptId}`, '_blank')}
+                onClick={() => window.open(\`https://proofrails-clone-middleware.onrender.com/receipt/\${receiptId}\`, '_blank')}
                 disabled={!receiptId}
               >
                 <Download className="w-4 h-4" />
@@ -462,10 +433,7 @@ function PaymentPage() {
             </div>
 
             {verifyResult && (
-              <div className={`p-4 rounded-lg border-l-4 ${verifyResult.matches_onchain
-                ? 'bg-green-50 border-green-500'
-                : 'bg-yellow-50 border-yellow-500'
-                }`}>
+              <div className={\`p-4 rounded-lg border-l-4 \${verifyResult.matches_onchain ? 'bg-green-50 border-green-500' : 'bg-yellow-50 border-yellow-500'}\`}>
                 <p className="text-xs font-semibold mb-2">Verification Result:</p>
                 <pre className="text-xs overflow-x-auto">{JSON.stringify(verifyResult, null, 2)}</pre>
               </div>
@@ -511,19 +479,13 @@ function PaymentPage() {
               placeholder="Value to validate"
               value={validationInput}
               onChange={e => setValidationInput(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
             />
-            <button
-              onClick={handleValidate}
-              className="w-full p-3 bg-[#e93b6c] text-white rounded-lg hover:bg-[#d12a5a] transition font-medium shadow-md"
-            >
+            <button onClick={handleValidate} className="w-full p-3 bg-[#e93b6c] text-white rounded-lg hover:bg-[#d12a5a] transition font-medium shadow-md">
               ✓ Validate
             </button>
             {validationResult !== null && (
-              <div className={`p-4 rounded-lg border-l-4 ${validationResult === true || validationResult?.valid
-                ? 'bg-green-50 border-green-500'
-                : 'bg-red-50 border-red-500'
-                }`}>
+              <div className={\`p-4 rounded-lg border-l-4 \${validationResult === true || validationResult?.valid ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}\`}>
                 <pre className="text-xs overflow-x-auto">{JSON.stringify(validationResult, null, 2)}</pre>
               </div>
             )}
@@ -535,24 +497,9 @@ function PaymentPage() {
               <span className="text-2xl">🪝</span> React Hooks
             </h2>
             <div className="grid md:grid-cols-3 gap-3">
-              <button
-                onClick={handleFetchReceipts}
-                className="p-3 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium"
-              >
-                Fetch Receipts
-              </button>
-              <button
-                onClick={handleFetchReceiptDetails}
-                className="p-3 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition font-medium"
-              >
-                Fetch Receipt Details
-              </button>
-              <button
-                onClick={handleCreateProjectHook}
-                className="p-3 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition font-medium"
-              >
-                Create Project
-              </button>
+              <button onClick={handleFetchReceipts} className="p-3 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium">Fetch Receipts</button>
+              <button onClick={handleFetchReceiptDetails} className="p-3 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium">Fetch Receipt Details</button>
+              <button onClick={handleCreateProjectHook} className="p-3 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium">Create Project</button>
             </div>
             {receipts && (
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -589,6 +536,94 @@ function PaymentPage() {
         <div className="text-center mt-8 text-gray-500 text-sm">
           <p>ProofRails SDK v1.5+ • Built with Next.js & Rainbow Kit</p>
         </div>
+      </div>
+    </div>
+  );
+}`;
+
+export default function DemoPage() {
+  const [showCode, setShowCode] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Interactive Demo</h1>
+          <p className="text-slate-600">
+            Test all ProofRails SDK features in a comprehensive playground
+          </p>
+        </div>
+
+        {/* Toggle Button */}
+        <button
+          onClick={() => setShowCode(!showCode)}
+          className="flex items-center gap-2 px-4 py-2 bg-[#e93b6c] text-white rounded-lg hover:bg-[#d12a5a] transition font-medium"
+        >
+          {showCode ? (
+            <>
+              <Play size={18} />
+              View Demo
+            </>
+          ) : (
+            <>
+              <Code size={18} />
+              View Source Code
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Description */}
+      {!showCode && (
+        <div className="prose prose-slate">
+          <p>
+            This interactive playground demonstrates all core features of the ProofRails SDK:
+          </p>
+          <ul className="text-sm space-y-1">
+            <li>✅ Payment creation with automatic receipt generation</li>
+            <li>✅ ISO 20022 XML artifact downloads</li>
+            <li>✅ On-chain verification (by hash, URL, or receipt ID)</li>
+            <li>✅ Template-based workflows</li>
+            <li>✅ React hooks integration</li>
+            <li>✅ Project management</li>
+          </ul>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="mt-6">
+        {showCode ? (
+          <div>
+            <div className="mb-4 p-4 bg-[#fff1f3] border-l-4 border-[#e93b6c] rounded">
+              <p className="text-sm text-slate-700">
+                <strong>📝 Source Code:</strong> This is the complete implementation of the demo playground.
+                Copy and modify it for your own projects.
+              </p>
+            </div>
+            <CodeBlock code={demoSourceCode} language="javascript" />
+          </div>
+        ) : (
+          <div className="border-4 border-[#ffe4e8] rounded-xl overflow-hidden">
+            <PaymentPageWrapper />
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between pt-8 border-t border-slate-200 mt-8">
+        <Link
+          href="/sdk/proofrails-sdk/getting-started"
+          className="flex items-center gap-2 text-slate-600 hover:text-[#e93b6c] transition-colors"
+        >
+          <ArrowLeft size={20} /> Getting Started
+        </Link>
+        <Link
+          href="/sdk/proofrails-sdk/create-api-key"
+          className="flex items-center gap-2 text-[#e93b6c] font-semibold hover:gap-3 transition-all"
+        >
+          Create API Key <ArrowRight size={20} />
+        </Link>
       </div>
     </div>
   );
