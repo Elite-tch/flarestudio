@@ -33,7 +33,7 @@ export default function Footer() {
                                 <Twitter size={20} className="group-hover:scale-110 transition-transform" />
                             </Link>
                             <Link
-                                href="https://t.me/Johnboscoizu"
+                                href="https://t.me/Johnboscoizuchukwu"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="p-2 bg-gray-50 text-gray-600 rounded-full hover:bg-[#0088cc] hover:text-white transition-all group"
