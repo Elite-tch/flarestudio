@@ -271,18 +271,18 @@ function PaymentPage({ setApiKey, hasApiKey }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#ffe4e8] p-4 md:p-8">
+    <div className="min-h-screen bg-[#ffe4e8]  md:p-8">
       <div className=" mx-auto">
         {/* Header */}
-        <div className="text-center mb-8 pt-20">
-          <h1 className="text-4xl font-bold text-[#e93b6c] mb-2">
+        <div className="text-center mb-8 pt-6">
+          <h1 className=" text-3xl md:text-4xl font-bold text-[#e93b6c] mb-2">
             ProofRails SDK Test Dashboard
           </h1>
           <p className="text-gray-600">Test all SDK features in one place</p>
         </div>
 
         {/* Main Grid */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 grid-cols-1 gap-6">
           {/* Project Management */}
           <section className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 space-y-4">
             <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
@@ -374,7 +374,7 @@ function PaymentPage({ setApiKey, hasApiKey }) {
               onChange={e => setReceiptId(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e93b6c] focus:border-transparent transition"
             />
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               <button
                 onClick={handleGetReceipt}
                 className="p-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition text-sm font-medium"
@@ -423,7 +423,7 @@ function PaymentPage({ setApiKey, hasApiKey }) {
             {/* Verify by Hash */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Verify by Hash</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 md:flex-row flex-col">
                 <input
                   placeholder="Bundle Hash (0x...)"
                   value={verifyHash}
@@ -432,7 +432,7 @@ function PaymentPage({ setApiKey, hasApiKey }) {
                 />
                 <button
                   onClick={handleVerifyHash}
-                  className="px-4 py-2 bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium whitespace-nowrap"
+                  className="px-4 py-2 w-fit md:w-full bg-[#fff1f3] text-[#e93b6c] rounded-lg hover:bg-[#ffe4e8] transition font-medium whitespace-nowrap"
                 >
                   Verify
                 </button>
@@ -442,7 +442,7 @@ function PaymentPage({ setApiKey, hasApiKey }) {
             {/* Verify by URL */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Verify by URL</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 md:flex-row flex-col">
                 <input
                   placeholder="Bundle URL (https://...)"
                   value={verifyUrl}
@@ -451,7 +451,7 @@ function PaymentPage({ setApiKey, hasApiKey }) {
                 />
                 <button
                   onClick={handleVerifyUrl}
-                  className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition font-medium whitespace-nowrap"
+                  className="px-4 py-2 w-fit md:w-full bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition font-medium whitespace-nowrap"
                 >
                   Verify
                 </button>

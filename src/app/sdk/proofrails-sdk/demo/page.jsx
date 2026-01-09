@@ -547,7 +547,7 @@ export default function DemoPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex md:items-center  md:flex-row flex-col  justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Interactive Demo</h1>
           <p className="text-slate-600">
@@ -558,7 +558,7 @@ export default function DemoPage() {
         {/* Toggle Button */}
         <button
           onClick={() => setShowCode(!showCode)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#e93b6c] text-white rounded-lg hover:bg-[#d12a5a] transition font-medium"
+          className="flex items-center w-fit  mt-4 md:mt-0 gap-2 px-4 py-2 bg-[#e93b6c] text-white rounded-lg hover:bg-[#d12a5a] transition font-medium"
         >
           {showCode ? (
             <>
