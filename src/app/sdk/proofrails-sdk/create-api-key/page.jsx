@@ -6,24 +6,42 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Copy, Check, Plus, Trash2, Key, Layers, Rocket } from 'lucide-react';
 
 export default function CreateApiKeyPage() {
-    const { isConnected } = useAccount();
+    const { isConnected, address } = useAccount();
     const [projects, setProjects] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
 
-    // Mock loading projects
-    useEffect(() => {
-        if (isConnected) {
-            const saved = localStorage.getItem('proofrails_demo_projects');
-            if (saved) setProjects(JSON.parse(saved));
-        }
-    }, [isConnected]);
+    // Get wallet-specific storage key
+    const getStorageKey = () => {
+        return address ? `proofrails_projects_${address.toLowerCase()}` : null;
+    };
 
-    // Save to local storage for demo
+    // Load projects when wallet connects
     useEffect(() => {
-        if (projects.length > 0) {
-            localStorage.setItem('proofrails_demo_projects', JSON.stringify(projects));
+        if (isConnected && address) {
+            const storageKey = getStorageKey();
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                setProjects(JSON.parse(saved));
+            } else {
+                setProjects([]); // Reset projects if nothing saved for this wallet
+            }
+        } else {
+            setProjects([]); // Clear projects when wallet disconnects
         }
-    }, [projects]);
+    }, [isConnected, address]);
+
+    // Save to local storage (wallet-specific)
+    useEffect(() => {
+        if (address) {
+            const storageKey = getStorageKey();
+            if (projects.length > 0) {
+                localStorage.setItem(storageKey, JSON.stringify(projects));
+            } else {
+                // Remove the key if no projects (keeps localStorage clean)
+                localStorage.removeItem(storageKey);
+            }
+        }
+    }, [projects, address]);
 
     const createProject = async (e) => {
         e.preventDefault();
@@ -71,7 +89,7 @@ export default function CreateApiKeyPage() {
         if (confirm('Are you sure you want to delete this project?')) {
             const updated = projects.filter(p => p.id !== id);
             setProjects(updated);
-            localStorage.setItem('proofrails_demo_projects', JSON.stringify(updated));
+            // Storage will be automatically updated by the useEffect hook
         }
     };
 
